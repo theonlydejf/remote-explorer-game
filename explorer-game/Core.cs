@@ -1,4 +1,4 @@
-namespace ExplorareGame.Core;
+namespace ExplorerGame.Core;
 
 public struct Vector
 {
@@ -34,12 +34,18 @@ public struct Vector
     }
 
     public static bool operator !=(Vector? a, Vector? b) => !(a == b);
+
+    public static readonly Vector Zero = new (0, 0);
 }
 
 public struct Tile
 {
-    // TODO
     public char Pixel { get; set; }
+
+    public Tile(char pixel)
+    {
+        Pixel = pixel;
+    }
 }
 
 public struct MovementResult

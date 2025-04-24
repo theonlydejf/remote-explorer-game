@@ -1,6 +1,6 @@
-using ExplorareGame.Core;
+using ExplorerGame.Core;
 
-namespace ExplorareGame.Base;
+namespace ExplorerGame.Base;
 
 public interface IGameSession
 {
