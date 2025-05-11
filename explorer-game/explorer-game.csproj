@@ -8,9 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="resources/test-img.png">
+    <Content Include="../resources/test-img.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
   </ItemGroup>
 
 </Project>

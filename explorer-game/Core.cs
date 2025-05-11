@@ -40,12 +40,27 @@ public struct Vector
 
 public struct Tile
 {
-    public char Pixel { get; set; }
+    public char Left { get; set; }
+    public char Right { get; set; }
 
-    public Tile(char pixel)
+    public Tile(char left, char right)
     {
-        Pixel = pixel;
+        Left = left;
+        Right = right;
     }
+
+    public Tile(string str)
+    {
+        if(str.Length != 2)
+            throw new ArgumentException("Tile can be constructed only from string of length 2");
+
+        Left = str[0];
+        Right = str[1];
+    }
+
+    public static implicit operator Tile(string str) => new Tile(str);
+
+    public override string ToString() => $"{Left}{Right}";
 }
 
 public struct MovementResult

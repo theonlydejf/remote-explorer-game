@@ -64,7 +64,7 @@ public class LocalGameSession : IGameSession
             new (-2, 0)
         };
 
-    internal LocalGameSession(Tile?[,] map)
+    public LocalGameSession(Tile?[,] map)
     {
         this.map = map;
         IsAgentAlive = true;
@@ -75,7 +75,12 @@ public class LocalGameSession : IGameSession
         AgentLocation += delta;
 
         // Check if agent encountered a tile
-        if (map[AgentLocation.X, AgentLocation.Y].HasValue)
+        if (AgentLocation.X < 0 || AgentLocation.X >= map.GetLength(0) ||
+            AgentLocation.Y < 0 || AgentLocation.Y >= map.GetLength(1))
+        {
+            IsAgentAlive = false;
+        }
+        else if(map[AgentLocation.X, AgentLocation.Y].HasValue)
         {
             DiscoveredTile = map[AgentLocation.X, AgentLocation.Y];
             IsAgentAlive = false;
