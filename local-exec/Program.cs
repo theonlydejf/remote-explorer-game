@@ -1,6 +1,8 @@
 ﻿using ExplorerGame.Base;
 using ExplorerGame.Core;
 using ExplorerGame.ConsoleVisualizer;
+using ExplorerGame.Net;
+using ExplorerGame.Net.Session;
 
 Tile?[,] map = 
 {
@@ -35,13 +37,19 @@ Console.Clear();
 
 ConsoleVisualizer viz = new ConsoleVisualizer(new (0, 0));
 
-LocalGameSession session1 = new LocalGameSession(map);
-SessionIdentifier id1 = new SessionIdentifier("🐶", ConsoleColor.Green);
-LocalGameSession session2 = new LocalGameSession(map);
-SessionIdentifier id2 = new SessionIdentifier("🐼", ConsoleColor.Blue);
+CancellationTokenSource cts = new();
+ConnectionHandler connectionHandler = new(map, viz);
+Task serverTask = connectionHandler.StartHttpServer("http://localhost:8080/", cts.Token);
 
-viz.AttachGameSession(session1, id1);
-viz.AttachGameSession(session2, id2);
+RemoteGameSessionFactory factory = new("http://localhost:8080/");
+
+// LocalGameSession session1 = new LocalGameSession(map);
+// SessionIdentifier id1 = new SessionIdentifier("🐶", ConsoleColor.Green);
+// LocalGameSession session2 = new LocalGameSession(map);
+// SessionIdentifier id2 = new SessionIdentifier("🐼", ConsoleColor.Blue);
+
+// viz.AttachGameSession(session1, id1);
+// viz.AttachGameSession(session2, id2);
 
 try
 {

@@ -1,5 +1,12 @@
 namespace ExplorerGame.Core;
 
+public interface IGameSession
+{
+    public bool IsAgentAlive { get; }
+    public Tile? DiscoveredTile { get; }
+    public MovementResult Move(Vector move);
+}
+
 public struct Vector
 {
     public int X { get; set; }

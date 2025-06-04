@@ -2,13 +2,6 @@ using ExplorerGame.Core;
 
 namespace ExplorerGame.Base;
 
-public interface IGameSession
-{
-    public bool IsAgentAlive { get; }
-    public Tile? DiscoveredTile { get; }
-    public MovementResult Move(Vector move);
-}
-
 public class AgentMovementEventArgs : EventArgs
 {
     public Vector AgentCurrentLocation { get; set; }
@@ -54,6 +47,7 @@ public class LocalGameSession : IGameSession
 
     internal static readonly HashSet<Vector> VALID_MOVES = new HashSet<Vector>
         {
+            new (0, 0),
             new (0, 1),
             new (0, -1),
             new (1, 0),
