@@ -30,26 +30,19 @@ Tile?[,] TransposeMap(Tile?[,] originalMap)
     return transposedMap;
 }
 
-map = GameFactory.MapFromImage("test-img.png");//TransposeMap(map);
+map = TransposeMap(map);
 
 Console.CursorVisible = false;
 Console.Clear();
 
 ConsoleVisualizer viz = new ConsoleVisualizer(new (0, 0));
-
 CancellationTokenSource cts = new();
 ConnectionHandler connectionHandler = new(map, viz);
 Task serverTask = connectionHandler.StartHttpServer("http://localhost:8080/", cts.Token);
 
 RemoteGameSessionFactory factory = new("http://localhost:8080/");
-
-// LocalGameSession session1 = new LocalGameSession(map);
-// SessionIdentifier id1 = new SessionIdentifier("🐶", ConsoleColor.Green);
-// LocalGameSession session2 = new LocalGameSession(map);
-// SessionIdentifier id2 = new SessionIdentifier("🐼", ConsoleColor.Blue);
-
-// viz.AttachGameSession(session1, id1);
-// viz.AttachGameSession(session2, id2);
+SessionIdentifier id1 = new SessionIdentifier("🐶", ConsoleColor.Green);
+RemoteGameSession session1 = factory.Create(id1);
 
 try
 {
@@ -73,21 +66,8 @@ try
             case ConsoleKey.LeftArrow:
                 session1.Move(new(-dist, 0));
                 break;
-
-            case ConsoleKey.W:
-                session2.Move(new(0, -dist));
-                break;
-            case ConsoleKey.S:
-                session2.Move(new(0, dist));
-                break;
-            case ConsoleKey.D:
-                session2.Move(new(dist, 0));
-                break;
-            case ConsoleKey.A:
-                session2.Move(new(-dist, 0));
-                break;
         }
-    } while (keyInfo.Key != ConsoleKey.Escape && (session1.IsAgentAlive || session2.IsAgentAlive));
+    } while (keyInfo.Key != ConsoleKey.Escape && (session1.IsAgentAlive));
 }
 finally
 {
