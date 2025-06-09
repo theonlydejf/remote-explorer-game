@@ -246,7 +246,6 @@ public class ConnectionHandler
 
     public async Task CleanupLoop(CancellationToken token)
     {
-        return;
         while (!token.IsCancellationRequested)
         {
             await Task.Delay(1000, token);
@@ -256,10 +255,7 @@ public class ConnectionHandler
                 DateTime now = DateTime.UtcNow;
                 var inactiveSessions = sessionsById.Where(x => now - x.Value.LastActivity > idleTimeout);
                 foreach (var session in inactiveSessions)
-                {
                     session.Value.Session.Kill("Inactive for too long");
-                    ForgetSession(session.Key, session.Value.ClientID);
-                }
             }
         }
     }
