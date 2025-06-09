@@ -2,6 +2,16 @@ using ExplorerGame.Core;
 
 namespace ExplorerGame.Base;
 
+public class AgentDiedEventArgs : EventArgs
+{
+    public string DeathReason { get; set; }
+
+    public AgentDiedEventArgs(string reason)
+    {
+        DeathReason = reason;
+    }
+}
+
 public class AgentMovementEventArgs : EventArgs
 {
     public Vector AgentCurrentLocation { get; set; }
@@ -20,16 +30,10 @@ public class LocalGameSession : IGameSession
     public bool IsAgentAlive
     {
         get => isAgentAlive;
-        set
-        {
-            isAgentAlive = value;
-            if (!value)
-                AgentDied?.Invoke(this, EventArgs.Empty);
-        }
     }
     public Tile? DiscoveredTile { get; private set; }
 
-    public event EventHandler? AgentDied;
+    public event EventHandler<AgentDiedEventArgs>? AgentDied;
     internal event EventHandler<AgentMovementEventArgs>? AgentMoved;
 
     internal Tile?[,] map;
@@ -46,22 +50,22 @@ public class LocalGameSession : IGameSession
     }
 
     internal static readonly HashSet<Vector> VALID_MOVES = new HashSet<Vector>
-        {
-            new (0, 0),
-            new (0, 1),
-            new (0, -1),
-            new (1, 0),
-            new (-1, 0),
-            new (0, 2),
-            new (0, -2),
-            new (2, 0),
-            new (-2, 0)
-        };
+    {
+        new (0, 0),
+        new (0, 1),
+        new (0, -1),
+        new (1, 0),
+        new (-1, 0),
+        new (0, 2),
+        new (0, -2),
+        new (2, 0),
+        new (-2, 0)
+    };
 
     public LocalGameSession(Tile?[,] map)
     {
         this.map = map;
-        IsAgentAlive = true;
+        isAgentAlive = true;
     }
 
     internal bool Translate(Vector delta)
@@ -72,12 +76,12 @@ public class LocalGameSession : IGameSession
         if (AgentLocation.X < 0 || AgentLocation.X >= map.GetLength(0) ||
             AgentLocation.Y < 0 || AgentLocation.Y >= map.GetLength(1))
         {
-            IsAgentAlive = false;
+            Kill("Wandered out of the map");
         }
-        else if(map[AgentLocation.X, AgentLocation.Y].HasValue)
+        else if (map[AgentLocation.X, AgentLocation.Y].HasValue)
         {
             DiscoveredTile = map[AgentLocation.X, AgentLocation.Y];
-            IsAgentAlive = false;
+            Kill("Stepped on a trap");
         }
 
         return IsAgentAlive;
@@ -92,5 +96,11 @@ public class LocalGameSession : IGameSession
             return new MovementResult(false, true);
 
         return new MovementResult(true, Translate(move));
+    }
+
+    public void Kill(string reason)
+    {
+        isAgentAlive = false;
+        AgentDied?.Invoke(this, new AgentDiedEventArgs(reason));
     }
 }

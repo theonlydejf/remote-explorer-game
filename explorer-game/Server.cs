@@ -9,16 +9,36 @@ using ExplorerGame.ConsoleVisualizer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+public class SessionConnectedEventArgs : EventArgs
+{
+    public string ClientUsername { get; set; }
+    public string ClientID { get; set; }
+    public SessionIdentifier? SessionIdentifier { get; set; }
+    public LocalGameSession? GameSession { get; set; }
+    public JObject Response { get; set; }
+
+    public SessionConnectedEventArgs(string clientUsername, string clientID, SessionIdentifier? sessionIdentifier, LocalGameSession? session, JObject response)
+    {
+        ClientUsername = clientUsername;
+        ClientID = clientID;
+        SessionIdentifier = sessionIdentifier;
+        Response = response;
+        GameSession = session;
+    }
+}
+
 public class ConnectionHandler
 {
     private readonly ConsoleVisualizer visualizer;
     private readonly Tile?[,] map;
-    private readonly object sync = new();
+    private readonly object sync = new object();
 
     private readonly Dictionary<string, List<(string sessionId, DateTime lastActivity)>> clientSessions = new();
     private readonly Dictionary<string, LocalGameSession> sessionsById = new();
     private readonly Dictionary<string, SessionIdentifier> sessionIdentifiers = new();
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(15);
+    
+    public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
     public ConnectionHandler(Tile?[,] map, ConsoleVisualizer visualizer)
     {
@@ -31,7 +51,6 @@ public class ConnectionHandler
         var listener = new HttpListener();
         listener.Prefixes.Add(prefix);
         listener.Start();
-        Console.WriteLine("HTTP server running on " + prefix);
 
         _ = Task.Run(() => CleanupLoop(token), token);
 
@@ -59,6 +78,7 @@ public class ConnectionHandler
                 };
             }
 
+            // TODO wait 200ms after each move
             var responseString = response.ToString(Formatting.None);
             var buffer = Encoding.UTF8.GetBytes(responseString);
             context.Response.ContentType = "application/json";
@@ -84,7 +104,11 @@ public class ConnectionHandler
         switch (context.Request.Url?.AbsolutePath)
         {
             case "/connect":
-                response = HandleConnect(args);
+                (response, SessionIdentifier? sid) = HandleConnect(args);
+                LocalGameSession? gameSession = null;
+                if (response.Value<bool>("success"))
+                    gameSession = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
+                SessionConnected?.Invoke(this, new(args.Value<string>("username") ?? "unknown", clientID, sid, gameSession, response));
                 break;
             case "/move":
                 response = HandleMove(args);
@@ -96,7 +120,7 @@ public class ConnectionHandler
         return response;
     }
 
-    private JObject HandleConnect(JObject args)
+    private (JObject, SessionIdentifier?) HandleConnect(JObject args)
     {
         string clientId = args.Value<string>("clientId")!;
         string identifier = args.Value<string>("identifier")!;
@@ -105,13 +129,13 @@ public class ConnectionHandler
         lock (sync)
         {
             if (sessionIdentifiers.Values.Any(id => id.Identifier == identifier && id.Color == color))
-                return new JObject { ["success"] = false, ["message"] = "Identifier already in use" };
+                return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))
                 clientSessions[clientId] = new();
 
             if (clientSessions[clientId].Count >= 5)
-                return new JObject { ["success"] = false, ["message"] = "Too many sessions" };
+                return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);
             string sessionId = Guid.NewGuid().ToString();
@@ -122,7 +146,7 @@ public class ConnectionHandler
             clientSessions[clientId].Add((sessionId, DateTime.UtcNow));
 
             visualizer.AttachGameSession(session, sid);
-            return new JObject { ["success"] = true, ["uuid"] = sessionId };
+            return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sid);
         }
     }
 
@@ -179,7 +203,7 @@ public class ConnectionHandler
                         if (DateTime.UtcNow - lastTime > idleTimeout)
                         {
                             if (sessionsById.TryGetValue(sessionId, out var session))
-                                session.IsAgentAlive = false;
+                                session.Kill("Inactive for too long");
 
                             client.Value.RemoveAt(i);
                             sessionsById.Remove(sessionId);

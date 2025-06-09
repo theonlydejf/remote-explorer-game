@@ -198,17 +198,17 @@ public class ConsoleVisualizer
         lock(consoleLock)
         {
             Console.SetCursorPosition(windowLocation.X, windowLocation.Y);
-            Console.Write($"+{ new string('-', w*2) }+");
+            Console.Write($"┌{ new string('─', w*2) }┐");
             for (int y = 0; y < h; y++)
             {
                 Console.SetCursorPosition(windowLocation.X, windowLocation.Y + y + 1);
-                Console.Write('|');
+                Console.Write('│');
                 Console.SetCursorPosition(windowLocation.X + w*2 + 1, windowLocation.Y + y + 1);
-                Console.Write('|');
+                Console.Write('│');
             }
             
             Console.SetCursorPosition(windowLocation.X, windowLocation.Y + h + 1);
-            Console.Write($"+{ new string('-', w*2) }+");
+            Console.Write($"└{ new string('─', w*2) }┘");
         }
     }
 }

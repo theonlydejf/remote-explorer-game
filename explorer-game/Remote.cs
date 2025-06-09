@@ -26,14 +26,13 @@ public class RemoteGameSession : IGameSession
     {
         var request = new
         {
-            cmd = "move",
             sessionId,
             dx = move.X,
             dy = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-        var response = httpClient.PostAsync(serverUrl + "/connect", content).Result;
+        var response = httpClient.PostAsync(serverUrl + "/move", content).Result;
         var json = response.Content.ReadAsStringAsync().Result;
         var result = JObject.Parse(json);
 
@@ -48,24 +47,26 @@ public class RemoteGameSession : IGameSession
 public class RemoteGameSessionFactory
 {
     private readonly string serverUrl;
+    private readonly string username;
     private readonly HttpClient httpClient = new();
 
-    public RemoteGameSessionFactory(string serverUrl)
+    public RemoteGameSessionFactory(string serverUrl, string username = "unknown")
     {
         this.serverUrl = serverUrl.TrimEnd('/');
+        this.username = username;
     }
 
     public RemoteGameSession Create(SessionIdentifier identifier)
     {
-        var request = new
+        JObject request = new JObject()
         {
-            cmd = "connect",
-            identifier = identifier.Identifier,
-            color = identifier.Color.ToString()
+            ["identifier"] = identifier.Identifier,
+            ["color"] = identifier.Color.ToString(),
+            ["username"] = username
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-        var response = httpClient.PostAsync(serverUrl + "/command", content).Result;
+        var response = httpClient.PostAsync(serverUrl + "/connect", content).Result;
         var json = response.Content.ReadAsStringAsync().Result;
         var obj = JObject.Parse(json);
 
