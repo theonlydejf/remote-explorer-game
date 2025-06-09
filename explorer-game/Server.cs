@@ -8,6 +8,7 @@ using ExplorerGame.Base;
 using ExplorerGame.ConsoleVisualizer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 public class SessionConnectedEventArgs : EventArgs
 {
@@ -36,7 +37,7 @@ public class ConnectionHandler
     private readonly Dictionary<string, List<(string sessionId, DateTime lastActivity)>> clientSessions = new();
     private readonly Dictionary<string, LocalGameSession> sessionsById = new();
     private readonly Dictionary<string, SessionIdentifier> sessionIdentifiers = new();
-    private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(15);
+    private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
     
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
@@ -138,6 +139,7 @@ public class ConnectionHandler
                 return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);
+            session.AgentDied += AgentDied;
             string sessionId = Guid.NewGuid().ToString();
             var sid = new SessionIdentifier(identifier, color, map);
 
@@ -148,6 +150,18 @@ public class ConnectionHandler
             visualizer.AttachGameSession(session, sid);
             return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sid);
         }
+    }
+
+    private void AgentDied(object? sender, AgentDiedEventArgs e)
+    {
+        if (sender is not LocalGameSession session || sender == null)
+            return;
+
+        string sessionId = sessionsById.First(x => x.Value == session).Key;
+        foreach (var (_, value) in clientSessions)
+            value.RemoveAll(x => x.sessionId == sessionId);
+        sessionsById.Remove(sessionId);
+        sessionIdentifiers.Remove(sessionId);
     }
 
     private JObject HandleMove(JObject request)
