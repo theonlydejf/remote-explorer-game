@@ -34,11 +34,11 @@ public class ConnectionHandler
     private readonly Tile?[,] map;
     private readonly object sync = new object();
 
-    private readonly Dictionary<string, List<(string sessionId, DateTime lastActivity)>> clientSessions = new();
-    private readonly Dictionary<string, LocalGameSession> sessionsById = new();
-    private readonly Dictionary<string, SessionIdentifier> sessionIdentifiers = new();
+    private readonly Dictionary<string, List<string>> clientSessions = new();
+    private readonly Dictionary<string, SessionWrapper> sessionsById = new();
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
-    
+    private readonly TimeSpan moveDuration = TimeSpan.FromMilliseconds(200);
+
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
     public ConnectionHandler(Tile?[,] map, ConsoleVisualizer visualizer)
@@ -64,7 +64,7 @@ public class ConnectionHandler
                 context.Response.Close();
                 continue;
             }
-            
+
             JObject response;
             try
             {
@@ -79,17 +79,21 @@ public class ConnectionHandler
                 };
             }
 
-            // TODO wait 200ms after each move
-            var responseString = response.ToString(Formatting.None);
-            var buffer = Encoding.UTF8.GetBytes(responseString);
-            context.Response.ContentType = "application/json";
-            context.Response.ContentEncoding = Encoding.UTF8;
-            context.Response.ContentLength64 = buffer.Length;
-            await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            context.Response.Close();
+            await SendResponse(response, context);
         }
 
         listener.Stop();
+    }
+
+    private async Task SendResponse(JObject response, HttpListenerContext context)
+    {
+        var responseString = response.ToString(Formatting.None);
+        var buffer = Encoding.UTF8.GetBytes(responseString);
+        context.Response.ContentType = "application/json";
+        context.Response.ContentEncoding = Encoding.UTF8;
+        context.Response.ContentLength64 = buffer.Length;
+        await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+        context.Response.Close();
     }
 
     private async Task<JObject> HandleCommand(HttpListenerContext context)
@@ -108,7 +112,7 @@ public class ConnectionHandler
                 (response, SessionIdentifier? sid) = HandleConnect(args);
                 LocalGameSession? gameSession = null;
                 if (response.Value<bool>("success"))
-                    gameSession = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
+                    gameSession = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")].Session;
                 SessionConnected?.Invoke(this, new(args.Value<string>("username") ?? "unknown", clientID, sid, gameSession, response));
                 break;
             case "/move":
@@ -129,7 +133,7 @@ public class ConnectionHandler
 
         lock (sync)
         {
-            if (sessionIdentifiers.Values.Any(id => id.Identifier == identifier && id.Color == color))
+            if (sessionsById.Values.Any(id => id.SessionIdentifier.Identifier == identifier && id.SessionIdentifier.Color == color))
                 return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))
@@ -143,13 +147,20 @@ public class ConnectionHandler
             string sessionId = Guid.NewGuid().ToString();
             var sid = new SessionIdentifier(identifier, color, map);
 
-            sessionsById[sessionId] = session;
-            sessionIdentifiers[sessionId] = sid;
-            clientSessions[clientId].Add((sessionId, DateTime.UtcNow));
+            sessionsById[sessionId] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
+            clientSessions[clientId].Add(sessionId);
 
             visualizer.AttachGameSession(session, sid);
             return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sid);
         }
+    }
+
+    private void ForgetSession(string sessionId, string? clientID = null)
+    {
+        if (clientID == null)
+            clientID = sessionsById[sessionId].ClientID;
+        clientSessions[clientID].RemoveAll(x => x == sessionId);
+        sessionsById.Remove(sessionId);
     }
 
     private void AgentDied(object? sender, AgentDiedEventArgs e)
@@ -157,11 +168,8 @@ public class ConnectionHandler
         if (sender is not LocalGameSession session || sender == null)
             return;
 
-        string sessionId = sessionsById.First(x => x.Value == session).Key;
-        foreach (var (_, value) in clientSessions)
-            value.RemoveAll(x => x.sessionId == sessionId);
-        sessionsById.Remove(sessionId);
-        sessionIdentifiers.Remove(sessionId);
+        var sessionKeyValue = sessionsById.First(x => x.Value.Session == session);
+        ForgetSession(sessionKeyValue.Key, sessionKeyValue.Value.ClientID);
     }
 
     private JObject HandleMove(JObject request)
@@ -175,8 +183,9 @@ public class ConnectionHandler
             if (!sessionsById.TryGetValue(sessionId, out var session))
                 return new JObject { ["success"] = false, ["message"] = "Unknown sessionId" };
 
-            var result = session.Move(new Vector(dx, dy));
-            UpdateActivity(sessionId);
+            var result = session.Session.Move(new Vector(dx, dy));
+            if(result.IsPlayerAlive && result.MovedSuccessfully)
+                UpdateActivity(sessionId);
             return new JObject
             {
                 ["success"] = true,
@@ -188,45 +197,42 @@ public class ConnectionHandler
 
     private void UpdateActivity(string sessionId)
     {
-        foreach (var (key, list) in clientSessions)
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i].sessionId == sessionId)
-                {
-                    list[i] = (sessionId, DateTime.UtcNow);
-                    return;
-                }
-            }
-        }
+        sessionsById[sessionId].LastActivity = DateTime.UtcNow;
     }
 
     public async Task CleanupLoop(CancellationToken token)
     {
+        return;
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(5000, token);
+            await Task.Delay(1000, token);
 
             lock (sync)
             {
-                foreach (var client in clientSessions)
+                DateTime now = DateTime.UtcNow;
+                var inactiveSessions = sessionsById.Where(x => now - x.Value.LastActivity > idleTimeout);
+                foreach (var session in inactiveSessions)
                 {
-                    for (int i = client.Value.Count - 1; i >= 0; i--)
-                    {
-                        var (sessionId, lastTime) = client.Value[i];
-                        if (DateTime.UtcNow - lastTime > idleTimeout)
-                        {
-                            if (sessionsById.TryGetValue(sessionId, out var session))
-                                session.Kill("Inactive for too long");
-
-                            client.Value.RemoveAt(i);
-                            sessionsById.Remove(sessionId);
-                            sessionIdentifiers.Remove(sessionId);
-                        }
-                    }
+                    session.Value.Session.Kill("Inactive for too long");
+                    ForgetSession(session.Key, session.Value.ClientID);
                 }
             }
         }
     }
-    
+
+    private class SessionWrapper
+    {
+        public string ClientID { get; set; }
+        public LocalGameSession Session { get; set; }
+        public SessionIdentifier SessionIdentifier { get; set; }
+        public DateTime LastActivity { get; set; }
+
+        public SessionWrapper(string clientID, LocalGameSession session, SessionIdentifier sessionIdentifier, DateTime lastActivity)
+        {
+            ClientID = clientID;
+            Session = session;
+            SessionIdentifier = sessionIdentifier;
+            LastActivity = lastActivity;
+        }
+    }
 }

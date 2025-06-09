@@ -13,6 +13,8 @@ public class RemoteGameSession : IGameSession
     private readonly string serverUrl;
     private readonly HttpClient httpClient = new();
 
+    public string? LastResponseMessage { get; private set; }
+
     public RemoteGameSession(string serverUrl, string sessionId)
     {
         this.serverUrl = serverUrl.TrimEnd('/');
@@ -35,6 +37,11 @@ public class RemoteGameSession : IGameSession
         var response = httpClient.PostAsync(serverUrl + "/move", content).Result;
         var json = response.Content.ReadAsStringAsync().Result;
         var result = JObject.Parse(json);
+
+        if (result.ContainsKey("message"))
+            LastResponseMessage = result.Value<string>("message");
+        else
+            LastResponseMessage = null;
 
         if (!result.Value<bool>("success"))
             return new MovementResult(false, IsAgentAlive);
