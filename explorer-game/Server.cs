@@ -37,7 +37,7 @@ public class ConnectionHandler
     private readonly Dictionary<string, List<string>> clientSessions = new();
     private readonly Dictionary<string, SessionWrapper> sessionsById = new();
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
-    private readonly TimeSpan moveDuration = TimeSpan.FromMilliseconds(200);
+    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(200);
 
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
@@ -68,7 +68,30 @@ public class ConnectionHandler
             JObject response;
             try
             {
-                response = await HandleCommand(context);
+                string clientID = context.Request.RemoteEndPoint?.ToString() ?? "unknown";
+                using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                string body = await reader.ReadToEndAsync().WaitAsync(cts.Token);
+                var args = JObject.Parse(body);
+                args["clientId"] = clientID;
+
+
+                if (!args.ContainsKey("sessionId"))
+                    await SendResponse(HandleCommand(args, context), context);
+                else
+                {
+                    string? sessionId = args.Value<string>("sessionId");
+                    if (sessionId == null || !sessionsById.TryGetValue(sessionId, out SessionWrapper? session) || session == null)
+                        await SendResponse(args, context);
+                    else
+                    {
+                        _ = session.ActionQueue
+                            .ContinueWith(x => HandleCommandSafe(args, context))
+                            .ContinueWith(async x => { await Task.Delay(sessionActionCooldown); return x.Result; })
+                            .Unwrap()
+                            .ContinueWith(async x => await SendResponse(x.Result, context));
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -77,12 +100,28 @@ public class ConnectionHandler
                     ["success"] = false,
                     ["message"] = "Exception occured during request processing: " + ex.Message
                 };
+                await SendResponse(response, context);
             }
-
-            await SendResponse(response, context);
         }
 
         listener.Stop();
+    }
+
+    private JObject HandleCommandSafe(JObject args, HttpListenerContext context)
+    {
+        try
+        {
+            return HandleCommand(args, context);
+        }
+        catch (Exception ex)
+        {
+            JObject response = new JObject
+            {
+                ["success"] = false,
+                ["message"] = "Exception occured during request processing: " + ex.Message
+            };
+            return response;
+        }
     }
 
     private async Task SendResponse(JObject response, HttpListenerContext context)
@@ -96,27 +135,28 @@ public class ConnectionHandler
         context.Response.Close();
     }
 
-    private async Task<JObject> HandleCommand(HttpListenerContext context)
+    private JObject HandleCommand(JObject args, HttpListenerContext context)
     {
-        string clientID = context.Request.RemoteEndPoint?.ToString() ?? "unknown";
-
-        using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
-        string body = await reader.ReadToEndAsync();
-        var args = JObject.Parse(body);
-        args["clientId"] = clientID;
         JObject response;
 
         switch (context.Request.Url?.AbsolutePath)
         {
             case "/connect":
-                (response, SessionIdentifier? sid) = HandleConnect(args);
-                LocalGameSession? gameSession = null;
+                (response, string? sessionId) = HandleConnect(args);
+                SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
-                    gameSession = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")].Session;
-                SessionConnected?.Invoke(this, new(args.Value<string>("username") ?? "unknown", clientID, sid, gameSession, response));
+                    session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
+                SessionConnected?.Invoke(this, new
+                    (
+                        args.Value<string>("username") ?? "unknown",
+                        args.Value<string>("clientId") ?? throw new Exception("clientId missing"),
+                        session == null ? null : session.SessionIdentifier,
+                        session == null ? null : session.Session,
+                        response
+                    ));
                 break;
             case "/move":
-                response = HandleMove(args);
+                (response, _) = HandleMove(args);
                 break;
             default:
                 response = new JObject { ["success"] = false, ["message"] = "Unknown request" };
@@ -125,7 +165,7 @@ public class ConnectionHandler
         return response;
     }
 
-    private (JObject, SessionIdentifier?) HandleConnect(JObject args)
+    private (JObject, string? sessionId) HandleConnect(JObject args)
     {
         string clientId = args.Value<string>("clientId")!;
         string identifier = args.Value<string>("identifier")!;
@@ -151,7 +191,7 @@ public class ConnectionHandler
             clientSessions[clientId].Add(sessionId);
 
             visualizer.AttachGameSession(session, sid);
-            return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sid);
+            return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sessionId);
         }
     }
 
@@ -172,7 +212,7 @@ public class ConnectionHandler
         ForgetSession(sessionKeyValue.Key, sessionKeyValue.Value.ClientID);
     }
 
-    private JObject HandleMove(JObject request)
+    private (JObject, string? sessionId) HandleMove(JObject request)
     {
         string sessionId = request.Value<string>("sessionId")!;
         int dx = request.Value<int>("dx");
@@ -181,17 +221,21 @@ public class ConnectionHandler
         lock (sync)
         {
             if (!sessionsById.TryGetValue(sessionId, out var session))
-                return new JObject { ["success"] = false, ["message"] = "Unknown sessionId" };
+                return (new JObject { ["success"] = false, ["message"] = "Unknown sessionId" }, null);
 
             var result = session.Session.Move(new Vector(dx, dy));
             if(result.IsPlayerAlive && result.MovedSuccessfully)
                 UpdateActivity(sessionId);
-            return new JObject
-            {
-                ["success"] = true,
-                ["moved"] = result.MovedSuccessfully,
-                ["alive"] = result.IsPlayerAlive
-            };
+            return
+            (
+                new JObject
+                {
+                    ["success"] = true,
+                    ["moved"] = result.MovedSuccessfully,
+                    ["alive"] = result.IsPlayerAlive
+                },
+                sessionId
+            );
         }
     }
 
@@ -226,6 +270,7 @@ public class ConnectionHandler
         public LocalGameSession Session { get; set; }
         public SessionIdentifier SessionIdentifier { get; set; }
         public DateTime LastActivity { get; set; }
+        public Task ActionQueue = Task.CompletedTask;
 
         public SessionWrapper(string clientID, LocalGameSession session, SessionIdentifier sessionIdentifier, DateTime lastActivity)
         {
