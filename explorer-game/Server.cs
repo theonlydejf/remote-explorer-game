@@ -47,10 +47,10 @@ public class ConnectionHandler
         this.visualizer = visualizer;
     }
 
-    public async Task StartHttpServer(string prefix, CancellationToken token)
+    public async Task StartHttpServer(int port, CancellationToken token)
     {
         var listener = new HttpListener();
-        listener.Prefixes.Add(prefix);
+        listener.Prefixes.Add($"http://+:{port}/");
         listener.Start();
 
         _ = Task.Run(() => CleanupLoop(token), token);

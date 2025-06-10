@@ -40,7 +40,7 @@ ConnectionHandler connectionHandler = new(map, viz);
 Logger logger = new Logger(1, map.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - map.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, sync);
 connectionHandler.SessionConnected += LogSessionConnected;
 
-Task serverTask = connectionHandler.StartHttpServer("http://localhost:8080/", cts.Token);
+Task serverTask = connectionHandler.StartHttpServer(8080, cts.Token);
 
 RemoteGameSessionFactory factory = new("http://localhost:8080/", "Velky David");
 SessionIdentifier id1 = new SessionIdentifier("()", ConsoleColor.Green);
