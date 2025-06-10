@@ -82,12 +82,12 @@ public class AsyncMovementResult
 public struct MovementResult
 {
     public bool MovedSuccessfully { get; set; }
-    public bool IsPlayerAlive { get; set; }
+    public bool IsAgentAlive { get; set; }
 
-    public MovementResult(bool movedSuccessfully, bool isPlayerAlive)
+    public MovementResult(bool movedSuccessfully, bool isAgentAlive)
     {
         MovedSuccessfully = movedSuccessfully;
-        IsPlayerAlive = isPlayerAlive;
+        IsAgentAlive = isAgentAlive;
     }
 }
 

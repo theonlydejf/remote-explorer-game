@@ -231,7 +231,7 @@ public class ConnectionHandler
                 return (new JObject { ["success"] = false, ["message"] = "Unknown sessionId" }, null);
 
             var result = session.Session.Move(new Vector(dx, dy));
-            if(result.IsPlayerAlive && result.MovedSuccessfully)
+            if(result.IsAgentAlive && result.MovedSuccessfully)
                 UpdateActivity(sessionId);
             return
             (
@@ -239,7 +239,7 @@ public class ConnectionHandler
                 {
                     ["success"] = true,
                     ["moved"] = result.MovedSuccessfully,
-                    ["alive"] = result.IsPlayerAlive
+                    ["alive"] = result.IsAgentAlive
                 },
                 sessionId
             );

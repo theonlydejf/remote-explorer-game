@@ -35,7 +35,7 @@ namespace ExampleFeedback
             //  => neuspesny pohyb ale prezije
             // MovementResult result = session.Move(new Vector(6, -9));
 
-            if (result.IsPlayerAlive) // Zjisti jestli agent dany pohyb prezil
+            if (result.IsAgentAlive) // Zjisti jestli agent dany pohyb prezil
             {
                 Console.WriteLine("Agent prezil pohyb");
             }
@@ -60,7 +60,7 @@ namespace ExampleFeedback
             Console.WriteLine("Cekam...");
             Thread.Sleep(6100); // Pockam nez server agenta vyhodi za dlouhou neaktivitu
             MovementResult killedMoveResult = session.Move(new Vector(1, 0));
-            Console.WriteLine($"Zije: {killedMoveResult.IsPlayerAlive}, Pohyb byl uspesny: {killedMoveResult.MovedSuccessfully}");
+            Console.WriteLine($"Zije: {killedMoveResult.IsAgentAlive}, Pohyb byl uspesny: {killedMoveResult.MovedSuccessfully}");
 
             // Co delat pokud nevim proc s agentem z niceho nic umrel a nemuzu s nim najednou hybat?
             // Server pri nespravnem pohybu posila zpet zpravu proc to nemohl udelat.

@@ -46,7 +46,7 @@ namespace ExampleMultipleAgents
                     MovementResult result = sessions[i].Move(movement);
 
                     // Pokud pri pohybu zemrel, vytvor na jeho miste noveho
-                    if (!result.IsPlayerAlive)
+                    if (!result.IsAgentAlive)
                     {
                         sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Blue));
                     }

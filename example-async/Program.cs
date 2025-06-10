@@ -23,7 +23,7 @@ namespace ExampleAsync
             }
 
             // asyncResult.MovementResult.Value -> zde bude ulozen vysledek pohybu
-            bool isAlive = asyncResult.MovementResult.Value.IsPlayerAlive;
+            bool isAlive = asyncResult.MovementResult.Value.IsAgentAlive;
             bool moveSuccessful = asyncResult.MovementResult.Value.MovedSuccessfully;
             Console.WriteLine($"Zije: {isAlive}, Pohyb byl uspesny: {moveSuccessful}");
         }

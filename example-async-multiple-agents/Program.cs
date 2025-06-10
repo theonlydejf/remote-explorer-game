@@ -54,7 +54,7 @@ namespace ExampleAsyncMultipleAgents
                     if (results[i].Ready)
                     {
                         // Pokud umrel -> vytvor noveho agenta
-                        if (!results[i].MovementResult.Value.IsPlayerAlive)
+                        if (!results[i].MovementResult.Value.IsAgentAlive)
                             sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Magenta));
 
                         // Znovu s nim pohni
