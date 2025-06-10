@@ -153,9 +153,12 @@ public class ConnectionHandler
                 SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
                     session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
+                string username = args.Value<string>("username") ?? "unknown";
+                if (username.Length > 15)
+                    username = username.Substring(0, 12) + "...";
                 SessionConnected?.Invoke(this, new
                     (
-                        args.Value<string>("username") ?? "unknown",
+                        username,
                         args.Value<string>("clientId") ?? throw new Exception("clientId missing"),
                         session?.SessionIdentifier,
                         session?.Session,
