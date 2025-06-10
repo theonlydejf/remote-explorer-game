@@ -1,5 +1,6 @@
 # Remote explorer game
-An education tool used for programming lessons.
+An educational tool used for programming lessons.
 
-> [!WARNING]
-> **Work in progress**
+```
+// TODO fill this in :D
+```
