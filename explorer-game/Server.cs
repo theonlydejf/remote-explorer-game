@@ -82,7 +82,7 @@ public class ConnectionHandler
                 {
                     string? sessionId = args.Value<string>("sessionId");
                     if (sessionId == null || !sessionsById.TryGetValue(sessionId, out SessionWrapper? session) || session == null)
-                        await SendResponse(args, context);
+                        await SendResponse(HandleCommand(args, context), context);
                     else
                     {
                         lock (sync)

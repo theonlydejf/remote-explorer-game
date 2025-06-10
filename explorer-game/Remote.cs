@@ -69,10 +69,13 @@ public class RemoteGameSession : IGameSession
             LastResponseMessage = null;
 
         if (!result.Value<bool>("success"))
+        {
+            IsAgentAlive = false;
             return new MovementResult(false, IsAgentAlive);
+        }
 
         IsAgentAlive = result.Value<bool>("alive");
-        return new MovementResult(true, IsAgentAlive);
+        return new MovementResult(result.Value<bool>("moved"), IsAgentAlive);
     }
 }
 
