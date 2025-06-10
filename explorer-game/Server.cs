@@ -37,7 +37,7 @@ public class ConnectionHandler
     private readonly Dictionary<string, List<string>> clientSessions = new();
     private readonly Dictionary<string, SessionWrapper> sessionsById = new();
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
-    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(200);
+    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(150);
 
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
@@ -71,7 +71,7 @@ public class ConnectionHandler
                 string clientID = context.Request.RemoteEndPoint?.ToString() ?? "unknown";
                 using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                string body = await reader.ReadToEndAsync().WaitAsync(cts.Token);
+                string body = await reader.ReadToEndAsync(cts.Token).WaitAsync(cts.Token);
                 var args = JObject.Parse(body);
                 args["clientId"] = clientID;
 
@@ -85,11 +85,15 @@ public class ConnectionHandler
                         await SendResponse(args, context);
                     else
                     {
-                        _ = session.ActionQueue
-                            .ContinueWith(x => HandleCommandSafe(args, context))
-                            .ContinueWith(async x => { await Task.Delay(sessionActionCooldown); return x.Result; })
-                            .Unwrap()
-                            .ContinueWith(async x => await SendResponse(x.Result, context));
+                        lock (sync)
+                        {
+                            session.ActionQueue = session.ActionQueue.ContinueWith(
+                                _ => HandleCommandWithCooldown(args, context),
+                                CancellationToken.None,
+                                TaskContinuationOptions.None,
+                                TaskScheduler.Default
+                            ).Unwrap();
+                        }
                     }
                 }
             }
@@ -107,21 +111,23 @@ public class ConnectionHandler
         listener.Stop();
     }
 
-    private JObject HandleCommandSafe(JObject args, HttpListenerContext context)
+    private async Task HandleCommandWithCooldown(JObject args, HttpListenerContext context)
     {
+        JObject response;
         try
         {
-            return HandleCommand(args, context);
+            response = HandleCommand(args, context);
         }
         catch (Exception ex)
         {
-            JObject response = new JObject
+            response = new JObject
             {
                 ["success"] = false,
                 ["message"] = "Exception occured during request processing: " + ex.Message
             };
-            return response;
         }
+        await Task.Delay(sessionActionCooldown);
+        await SendResponse(response, context);
     }
 
     private async Task SendResponse(JObject response, HttpListenerContext context)
@@ -132,6 +138,7 @@ public class ConnectionHandler
         context.Response.ContentEncoding = Encoding.UTF8;
         context.Response.ContentLength64 = buffer.Length;
         await context.Response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+        context.Response.OutputStream.Flush();
         context.Response.Close();
     }
 
@@ -150,8 +157,8 @@ public class ConnectionHandler
                     (
                         args.Value<string>("username") ?? "unknown",
                         args.Value<string>("clientId") ?? throw new Exception("clientId missing"),
-                        session == null ? null : session.SessionIdentifier,
-                        session == null ? null : session.Session,
+                        session?.SessionIdentifier,
+                        session?.Session,
                         response
                     ));
                 break;

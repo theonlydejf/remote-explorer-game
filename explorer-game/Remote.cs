@@ -35,6 +35,31 @@ public class RemoteGameSession : IGameSession
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
         var response = httpClient.PostAsync(serverUrl + "/move", content).Result;
+        return HandleMoveResponse(response);
+    }
+
+    public AsyncMovementResult MoveAsync(Vector move)
+    {
+        var request = new
+        {
+            sessionId,
+            dx = move.X,
+            dy = move.Y
+        };
+
+        var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
+        AsyncMovementResult result = new();
+        var responseTask = httpClient.PostAsync(serverUrl + "/move", content);
+        result.ResponseHandlerTask = responseTask.ContinueWith(x =>
+        {
+            result.MovementResult = HandleMoveResponse(x.Result);
+            result.Ready = true;
+        });
+        return result;
+    }
+
+    private MovementResult HandleMoveResponse(HttpResponseMessage response)
+    {
         var json = response.Content.ReadAsStringAsync().Result;
         var result = JObject.Parse(json);
 

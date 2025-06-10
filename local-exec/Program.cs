@@ -36,7 +36,7 @@ ConsoleVisualizer viz = new ConsoleVisualizer(new (0, 0), sync);
 CancellationTokenSource cts = new();
 ConnectionHandler connectionHandler = new(map, viz);
 
-Logger logger = new Logger(20, 0, 50, 10, ConsoleColor.White, ConsoleColor.Red, sync);
+Logger logger = new Logger(20, 0, Console.WindowWidth - 20, 20, ConsoleColor.White, Console.BackgroundColor, sync);
 connectionHandler.SessionConnected += LogSessionConnected;
 
 Task serverTask = connectionHandler.StartHttpServer("http://localhost:8080/", cts.Token);
@@ -48,6 +48,29 @@ SessionIdentifier id2 = new SessionIdentifier("<>", ConsoleColor.Blue);
 RemoteGameSession session1 = factory.Create(id1);
 RemoteGameSession session2 = factory.Create(id2);
 
+AsyncMovementResult?[] results = new AsyncMovementResult[4];
+
+for (int i = 0; i < results.Length; i++)
+{
+    logger.WriteLine($"start moving {i}", ConsoleColor.Green);
+    results[i] = session1.MoveAsync(new(0, 1));
+}
+
+
+int readyCnt = 0;
+while (readyCnt < 4)
+{
+    for (int i = 0; i < results.Length; i++)
+    {
+        if (results[i]?.Ready == true)
+        {
+            readyCnt++;
+            logger.WriteLine($"moved {i}", ConsoleColor.Green);
+            results[i] = null;
+        }
+    }
+}
+
 try
 {
     ConsoleKeyInfo keyInfo;
@@ -56,47 +79,58 @@ try
         keyInfo = Console.ReadKey(true);
         int dist = keyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift) ? 2 : 1;
 
+        MovementResult? movementResult1 = null;
+        MovementResult? movementResult2 = null;
         switch (keyInfo.Key)
         {
             case ConsoleKey.UpArrow:
-                session1.Move(new(0, -dist));
+                movementResult1 = session1.Move(new(0, -dist));
                 break;
             case ConsoleKey.DownArrow:
-                session1.Move(new(0, dist));
+                movementResult1 = session1.Move(new(0, dist));
                 break;
             case ConsoleKey.RightArrow:
-                session1.Move(new(dist, 0));
+                movementResult1 = session1.Move(new(dist, 0));
                 break;
             case ConsoleKey.LeftArrow:
-                session1.Move(new(-dist, 0));
+                movementResult1 = session1.Move(new(-dist, 0));
                 break;
 
             case ConsoleKey.W:
-                session2.Move(new(0, -dist));
+                movementResult2 = session2.Move(new(0, -dist));
                 break;
             case ConsoleKey.S:
-                session2.Move(new(0, dist));
+                movementResult2 = session2.Move(new(0, dist));
                 break;
             case ConsoleKey.D:
-                session2.Move(new(dist, 0));
+                movementResult2 = session2.Move(new(dist, 0));
                 break;
             case ConsoleKey.A:
-                session2.Move(new(-dist, 0));
+                movementResult2 = session2.Move(new(-dist, 0));
                 break;
         }
-    } while (keyInfo.Key != ConsoleKey.Escape && (session1.IsAgentAlive));
+        if (movementResult1.HasValue && !movementResult1.Value.MovedSuccessfully)
+            logger.WriteLine($"Local agent 1 move failed: {session1.LastResponseMessage ?? "No message"}", ConsoleColor.White, ConsoleColor.Red);
+        if (movementResult2.HasValue && !movementResult2.Value.MovedSuccessfully)
+            logger.WriteLine($"Local agent 2 move failed: {session1.LastResponseMessage ?? "No message"}", ConsoleColor.White, ConsoleColor.Red);
+    } while (keyInfo.Key != ConsoleKey.Escape);
+}
+catch (Exception ex)
+{
+    logger.WriteLine(ex.ToString(), ConsoleColor.White, ConsoleColor.Red);
 }
 finally
 {
     Console.CursorVisible = true;
-    Console.ReadKey();
+    Console.Clear();
+    cts.Cancel();
 }
 
 void LogSessionConnected(object? sender, SessionConnectedEventArgs e)
 {
     logger.Write("[", ConsoleColor.White);
     logger.Write(e.ClientUsername, ConsoleColor.Yellow);
-    logger.Write(" @ " + e.ClientID, ConsoleColor.DarkGray);
+    logger.Write(" @" + e.ClientID, ConsoleColor.DarkGray);
     logger.Write("] ", ConsoleColor.White);
     if (!e.Response.Value<bool>("success"))
     {
@@ -133,7 +167,7 @@ class AgentDiedLogger
     {
         logger.Write("[", ConsoleColor.White);
         logger.Write(sessionArgs.ClientUsername, ConsoleColor.Yellow);
-        logger.Write(" @ " + sessionArgs.ClientID, ConsoleColor.DarkGray);
-        logger.Write($"] Died (reason: '{ e.DeathReason }')", ConsoleColor.White);
+        logger.Write(" @" + sessionArgs.ClientID, ConsoleColor.DarkGray);
+        logger.WriteLine($"] Died (reason: '{ e.DeathReason }')", ConsoleColor.White);
     }
 }

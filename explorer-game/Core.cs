@@ -72,6 +72,13 @@ public struct Tile
     public override string ToString() => $"{Left}{Right}";
 }
 
+public class AsyncMovementResult
+{
+    public bool Ready { get; set; }
+    public MovementResult? MovementResult { get; set; }
+    public Task ResponseHandlerTask { get; set; } = Task.CompletedTask;
+}
+
 public struct MovementResult
 {
     public bool MovedSuccessfully { get; set; }
