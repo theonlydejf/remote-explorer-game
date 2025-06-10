@@ -62,8 +62,8 @@ namespace ExampleFeedback
             MovementResult killedMoveResult = session.Move(new Vector(1, 0));
             Console.WriteLine($"Zije: {killedMoveResult.IsAgentAlive}, Pohyb byl uspesny: {killedMoveResult.MovedSuccessfully}");
 
-            // Co delat pokud nevim proc s agentem z niceho nic umrel a nemuzu s nim najednou hybat?
-            // Server pri nespravnem pohybu posila zpet zpravu proc to nemohl udelat.
+            // Co delat pokud nevim proc agent z niceho nic umrel a nemuzu s nim najednou hybat?
+            // Server pri neuspesnem pokusu o pohyb posila zpet zpravu proc to nemohl udelat.
 
             // Zkontroluji jestli mi zprava prisla (ne vzdy musi prijit)
             if (session.LastResponseMessage != null)
