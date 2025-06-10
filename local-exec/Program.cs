@@ -2,7 +2,6 @@
 using ExplorerGame.Core;
 using ExplorerGame.ConsoleVisualizer;
 using ExplorerGame.Net;
-using ExplorerGame.Net.Session;
 
 Tile?[,] map = 
 {
@@ -12,6 +11,8 @@ Tile?[,] map =
     { null,  "\\=", "][", "=/",  null },
     { null,  null,  "||",  null,  null },
 };
+
+map = GameFactory.MapFromImage("resources/test-map.png");
 
 Tile?[,] TransposeMap(Tile?[,] originalMap)
 {
@@ -36,7 +37,7 @@ ConsoleVisualizer viz = new ConsoleVisualizer(new (0, 0), sync);
 CancellationTokenSource cts = new();
 ConnectionHandler connectionHandler = new(map, viz);
 
-Logger logger = new Logger(20, 0, Console.WindowWidth - 20, 20, ConsoleColor.White, Console.BackgroundColor, sync);
+Logger logger = new Logger(1, map.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - map.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, sync);
 connectionHandler.SessionConnected += LogSessionConnected;
 
 Task serverTask = connectionHandler.StartHttpServer("http://localhost:8080/", cts.Token);
@@ -48,28 +49,28 @@ SessionIdentifier id2 = new SessionIdentifier("<>", ConsoleColor.Blue);
 RemoteGameSession session1 = factory.Create(id1);
 RemoteGameSession session2 = factory.Create(id2);
 
-AsyncMovementResult?[] results = new AsyncMovementResult[4];
+// AsyncMovementResult?[] results = new AsyncMovementResult[4];
 
-for (int i = 0; i < results.Length; i++)
-{
-    logger.WriteLine($"start moving {i}", ConsoleColor.Green);
-    results[i] = session1.MoveAsync(new(0, 1));
-}
+// for (int i = 0; i < results.Length; i++)
+// {
+//     logger.WriteLine($"start moving {i}", ConsoleColor.Green);
+//     results[i] = session1.MoveAsync(new(0, 1));
+// }
 
 
-int readyCnt = 0;
-while (readyCnt < 4)
-{
-    for (int i = 0; i < results.Length; i++)
-    {
-        if (results[i]?.Ready == true)
-        {
-            readyCnt++;
-            logger.WriteLine($"moved {i}", ConsoleColor.Green);
-            results[i] = null;
-        }
-    }
-}
+// int readyCnt = 0;
+// while (readyCnt < 4)
+// {
+//     for (int i = 0; i < results.Length; i++)
+//     {
+//         if (results[i]?.Ready == true)
+//         {
+//             readyCnt++;
+//             logger.WriteLine($"moved {i}", ConsoleColor.Green);
+//             results[i] = null;
+//         }
+//     }
+// }
 
 try
 {

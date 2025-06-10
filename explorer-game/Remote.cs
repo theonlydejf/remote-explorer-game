@@ -1,4 +1,4 @@
-namespace ExplorerGame.Net.Session;
+namespace ExplorerGame.Net;
 
 using System.Net.Http;
 using System.Text;

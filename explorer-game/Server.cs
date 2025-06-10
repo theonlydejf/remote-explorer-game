@@ -37,7 +37,7 @@ public class ConnectionHandler
     private readonly Dictionary<string, List<string>> clientSessions = new();
     private readonly Dictionary<string, SessionWrapper> sessionsById = new();
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
-    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(150);
+    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(100);
 
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 

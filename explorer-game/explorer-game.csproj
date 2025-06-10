@@ -12,6 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="../resources/test-map.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="../resources/test-img.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
