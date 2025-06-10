@@ -33,7 +33,7 @@ Console.CursorVisible = false;
 Console.Clear();
 
 object sync = new object();
-ConsoleVisualizer viz = new ConsoleVisualizer(new (0, 0), sync);
+ConsoleVisualizer viz = new ConsoleVisualizer(new (Console.WindowWidth / 2 - (map.GetLength(0) * 2 + 2) / 2, 0), sync);
 CancellationTokenSource cts = new();
 ConnectionHandler connectionHandler = new(map, viz);
 
