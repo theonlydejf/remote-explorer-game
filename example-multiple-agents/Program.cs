@@ -45,7 +45,7 @@ namespace ExampleMultipleAgents
                     Vector movement = vecs[rnd.Next(0, vecs.Length)];
                     MovementResult result = sessions[i].Move(movement);
 
-                    // Pokud pri pohybu zemrel, vytvor na jeho miste noveho
+                    // Pokud pri pohybu zemrel, vytvor noveho
                     if (!result.IsAgentAlive)
                     {
                         sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Blue));
