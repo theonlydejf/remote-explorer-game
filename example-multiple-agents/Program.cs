@@ -16,7 +16,7 @@ namespace ExampleMultipleAgents
             RemoteGameSession[] sessions = new RemoteGameSession[AGENT_CNT];
             for (int i = 0; i < sessions.Length; i++)
             {
-                sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Blue));
+                sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Magenta));
             }
 
             // Pohyby co chci aby agenti umeli
@@ -48,7 +48,7 @@ namespace ExampleMultipleAgents
                     // Pokud pri pohybu zemrel, vytvor noveho
                     if (!result.IsAgentAlive)
                     {
-                        sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Blue));
+                        sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Magenta));
                     }
                 }
             }
