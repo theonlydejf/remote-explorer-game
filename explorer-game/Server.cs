@@ -30,7 +30,7 @@ public class SessionConnectedEventArgs : EventArgs
 
 public class ConnectionHandler
 {
-    private readonly ConsoleVisualizer visualizer;
+    private readonly ConsoleVisualizer? visualizer;
     private readonly Tile?[,] map;
     private readonly object sync = new object();
 
@@ -41,7 +41,7 @@ public class ConnectionHandler
 
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
-    public ConnectionHandler(Tile?[,] map, ConsoleVisualizer visualizer)
+    public ConnectionHandler(Tile?[,] map, ConsoleVisualizer? visualizer)
     {
         this.map = map;
         this.visualizer = visualizer;
@@ -200,7 +200,7 @@ public class ConnectionHandler
             sessionsById[sessionId] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
             clientSessions[clientId].Add(sessionId);
 
-            visualizer.AttachGameSession(session, sid);
+            visualizer?.AttachGameSession(session, sid);
             return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sessionId);
         }
     }
