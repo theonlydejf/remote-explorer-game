@@ -26,6 +26,18 @@ public static class GameFactory
                     result[y, x] = "##";
             }
         }
-        return result;
+        return TransposeMap(result);
+    }
+    private static Tile?[,] TransposeMap(Tile?[,] originalMap)
+    {
+        int rows = originalMap.GetLength(0);
+        int cols = originalMap.GetLength(1);
+        Tile?[,] transposedMap = new Tile?[cols, rows];
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                transposedMap[j, i] = originalMap[i, j];
+
+        return transposedMap;
     }
 }

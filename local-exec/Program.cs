@@ -27,7 +27,7 @@ Tile?[,] TransposeMap(Tile?[,] originalMap)
     return transposedMap;
 }
 
-map = TransposeMap(map);
+// map = TransposeMap(map);
 
 Console.CursorVisible = false;
 Console.Clear();
@@ -48,29 +48,6 @@ SessionIdentifier id2 = new SessionIdentifier("<>", ConsoleColor.Blue);
 
 RemoteGameSession session1 = factory.Create(id1);
 RemoteGameSession session2 = factory.Create(id2);
-
-// AsyncMovementResult?[] results = new AsyncMovementResult[4];
-
-// for (int i = 0; i < results.Length; i++)
-// {
-//     logger.WriteLine($"start moving {i}", ConsoleColor.Green);
-//     results[i] = session1.MoveAsync(new(0, 1));
-// }
-
-
-// int readyCnt = 0;
-// while (readyCnt < 4)
-// {
-//     for (int i = 0; i < results.Length; i++)
-//     {
-//         if (results[i]?.Ready == true)
-//         {
-//             readyCnt++;
-//             logger.WriteLine($"moved {i}", ConsoleColor.Green);
-//             results[i] = null;
-//         }
-//     }
-// }
 
 try
 {
