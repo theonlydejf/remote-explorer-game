@@ -10,6 +10,16 @@
           "${workspaceFolder}/local-exec/local-exec.csproj"
         ],
         "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "build solution",
+        "command": "dotnet",
+        "type": "process",
+        "args": [
+          "build",
+          "${workspaceFolder}/solution/solution.csproj"
+        ],
+        "problemMatcher": "$msCompile"
       }
     ]
   }

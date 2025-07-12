@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-async-multiple-agen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lesson-exec", "lesson-exec\lesson-exec.csproj", "{60071A51-83E2-45A3-A69C-5EF102E51149}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "solution", "solution\solution.csproj", "{67E0DB44-7794-4EB0-B284-E7660E2CFB21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{60071A51-83E2-45A3-A69C-5EF102E51149}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{60071A51-83E2-45A3-A69C-5EF102E51149}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{60071A51-83E2-45A3-A69C-5EF102E51149}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67E0DB44-7794-4EB0-B284-E7660E2CFB21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67E0DB44-7794-4EB0-B284-E7660E2CFB21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67E0DB44-7794-4EB0-B284-E7660E2CFB21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67E0DB44-7794-4EB0-B284-E7660E2CFB21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
