@@ -74,7 +74,7 @@ class SessionConnectedLogger
             {
                 logger.Write("Agent connection failed (", ConsoleColor.Red);
                 logger.Write(world, worldColor);
-                logger.Write(")", ConsoleColor.Red);
+                logger.WriteLine(")", ConsoleColor.Red);
                 return;
             }
 

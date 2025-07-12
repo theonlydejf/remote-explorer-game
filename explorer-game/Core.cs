@@ -42,6 +42,16 @@ public struct Vector
         return a.Equals(b);
     }
 
+    public static bool operator ==(Vector a, Vector b)
+    {
+        return a.X == b.X && a.Y == b.Y;
+    }
+
+    public static bool operator !=(Vector a, Vector b)
+    {
+        return !(a == b);
+    }
+
     public static bool operator !=(Vector? a, Vector? b) => !(a == b);
 
     public static readonly Vector Zero = new (0, 0);
