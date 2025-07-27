@@ -1,18 +1,26 @@
-﻿using System.Data.Common;
-using ExplorerGame.Core;
+﻿using ExplorerGame.Core;
 using ExplorerGame.Net;
 
-RemoteGameSessionFactory factory = new RemoteGameSessionFactory("http://127.0.0.1:8080/", "David");
+RemoteGameSessionFactory factory = new RemoteGameSessionFactory("http://127.0.0.1:8087/", "David");
 
-Map map = new Map(10, 10);
+Map map = new Map(15, 15);
 Agent[] agents = new Agent[5];
 for (int i = 0; i < agents.Length; i++)
 {
     agents[i] = new Agent(factory, getID(i), map, true);
 }
 
+DateTime lastDisplayUpdate = DateTime.UnixEpoch;
 while (true)
 {
+    foreach (Agent agent in agents)
+    {
+        if (agent.result.Ready)
+            agent.AfterStep();
+    }
+
+    if (DateTime.Now.Subtract(lastDisplayUpdate) < TimeSpan.FromMilliseconds(20))
+        continue;
     Console.Clear();
     for (int y = 0; y < map.Height; y++)
     {
@@ -39,6 +47,10 @@ while (true)
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.Write("??");
                     break;
+                case CellState.Reserved:
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write("**");
+                    break;
                 default:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.Write("**");
@@ -49,7 +61,7 @@ while (true)
     }
     if (agents.All(agent => agent.nowhereToGo))
         break;
-    Thread.Sleep(50);
+    lastDisplayUpdate = DateTime.Now;
 }
 // Console.Clear();
 // for (int y = 0; y < map.Height; y++)
@@ -87,7 +99,8 @@ enum CellState
     Undiscovered,
     Safe,
     Trap,
-    Unreachable
+    Unreachable,
+    Reserved
 }
 
 class Agent
@@ -101,8 +114,9 @@ class Agent
     public SessionIdentifier Identifier { get; }
     public Map Map { get; }
     private RemoteGameSessionFactory factory;
-    private AsyncMovementResult result;
+    public AsyncMovementResult result;
     private Vector? currStep;
+    private Vector? reserved;
     public bool allowJumps { get; set; }
     public bool nowhereToGo { get; private set; } = false;
 
@@ -115,38 +129,79 @@ class Agent
         this.allowJumps = allowJumps;
         lock (Sync)
         {
-            Destination = rndPos();
+            newDestination();
         }
         Step();
     }
 
     private void Step()
     {
+        if (!new[] { CellState.Undiscovered, CellState.Reserved }.Contains(Map[Destination])
+            || currStep == new Vector(0, 0))
+            newDestination();
+
         currStep = NextStep();
         if (currStep == new Vector(0, 0))
         {
             lock (Sync)
             {
-                Destination = rndPos();
+                newDestination();
             }
             currStep = NextStep();
         }
-        
-        while (currStep == null)
+
+        if (!allowJumps)
+        {
+            //  Limit tries v------------------------------v    v--------------v check if valid dest was found
+            for (int i = 0; i < (Map.Width + Map.Height / 2) && currStep == null; i++)
+            {
+                newDestination();
+                currStep = NextStep();
+            }
+
+            if (currStep == null)
+            {
+                currStep = new Vector(0, 0);
+                releaseReservedLoc();
+            }
+        }
+        else while (currStep == null)
         {
             lock (Sync)
             {
-                if (allowJumps)
-                    Map[Destination] = CellState.Unreachable;
-                else
-                    Task.Delay(10);
-                Destination = rndPos();
+                Map[Destination] = CellState.Unreachable;
+                newDestination();
             }
-            Task.Yield();
             currStep = NextStep();
         }
+
         result = GameSession.MoveAsync(currStep.Value);
-        result.ResponseHandlerTask.ContinueWith(x => AfterStep());
+        // result.ResponseHandlerTask.ContinueWith(x => AfterStep());
+    }
+
+    private void newDestination()
+    {
+        Destination = closestPos();
+        reserveLoc(Destination);
+    }
+
+    private void releaseReservedLoc()
+    {
+        if (!reserved.HasValue)
+            return;
+
+        if (Map[reserved.Value] == CellState.Reserved)
+            Map[reserved.Value] = CellState.Undiscovered;
+        return;
+    }
+
+    private void reserveLoc(Vector loc)
+    {
+        if (reserved.HasValue)
+            releaseReservedLoc();
+        
+        reserved = loc;
+        Map[reserved.Value] = CellState.Reserved;
     }
 
     public void AfterStep()
@@ -154,15 +209,17 @@ class Agent
         if (nowhereToGo)
             return;
         if (currStep == null)
-            goto prasarna;
+        {
+            Step();
+            return;
+        }
         Pos += currStep.Value;
         lock (Sync)
         {
             if (result.MovementResult?.IsAgentAlive == true)
             {
                 Map[Pos] = CellState.Safe;
-                Step();
-                return;
+                goto prasarna;
             }
 
             if (result.MovementResult?.MovedSuccessfully == false)
@@ -171,12 +228,26 @@ class Agent
             GameSession = factory.Create(Identifier);
             Map[Pos] = CellState.Trap;
             Pos = new(0, 0);
-            Destination = rndPos();
+            newDestination();
         }
     prasarna:
         Step();
     }
 
+    Vector closestPos()
+    {
+        Vector? vec = Map.PickClosestUndiscovered(Pos);
+        while (vec == null)
+        {
+            if (GrowMap(6, 3))
+            {
+                nowhereToGo = true;
+                return new Vector(0, 0);
+            }
+            vec = Map.PickClosestUndiscovered(Pos);
+        }
+        return vec.Value;
+    }
     Vector rndPos()
     {
         Vector? vec = Map.PickRandomUndiscovered(Random.Shared);
@@ -322,7 +393,7 @@ class Agent
                 continue;
 
             // Only allow Safe or Undiscovered cells
-            if (new CellState[] { CellState.Safe, CellState.Undiscovered }.Contains(Map[nx, ny]))
+            if (new CellState[] { CellState.Safe, CellState.Undiscovered, CellState.Reserved }.Contains(Map[nx, ny]))
                 yield return new Vector(nx, ny);
         }
     }
@@ -402,6 +473,35 @@ class Map
         UndiscoveredCnt += (newWidth * newHeight) - (Width * Height);
 
         map = newMap;
+    }
+
+    // Picks the undiscovered position closest to the given point using BFS, or returns null if none found
+    public Vector? PickClosestUndiscovered(Vector point)
+    {
+        var visited = new bool[Width, Height];
+        var queue = new Queue<Vector>();
+        queue.Enqueue(point);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            int x = current.X, y = current.Y;
+
+            if (x < 0 || y < 0 || x >= Width || y >= Height || visited[x, y])
+                continue;
+
+            visited[x, y] = true;
+
+            if (map[x, y] == CellState.Undiscovered)
+                return current;
+
+            // Add neighbors (up, down, left, right)
+            queue.Enqueue(new Vector(x + 1, y));
+            queue.Enqueue(new Vector(x - 1, y));
+            queue.Enqueue(new Vector(x, y + 1));
+            queue.Enqueue(new Vector(x, y - 1));
+        }
+        return null;
     }
 
     // Picks a random undiscovered position, or returns null if none found
