@@ -42,6 +42,16 @@ public struct Vector
         return a.Equals(b);
     }
 
+    public static bool operator ==(Vector a, Vector b)
+    {
+        return a.X == b.X && a.Y == b.Y;
+    }
+
+    public static bool operator !=(Vector a, Vector b)
+    {
+        return !(a == b);
+    }
+
     public static bool operator !=(Vector? a, Vector? b) => !(a == b);
 
     public static readonly Vector Zero = new (0, 0);
@@ -74,9 +84,16 @@ public struct Tile
 
 public class AsyncMovementResult
 {
-    public bool Ready { get; set; }
-    public MovementResult? MovementResult { get; set; }
-    public Task ResponseHandlerTask { get; set; } = Task.CompletedTask;
+    public bool Ready { get; internal set; }
+    public MovementResult? MovementResult { get; internal set; }
+    public Task ResponseHandlerTask { get; internal set; } = Task.CompletedTask;
+
+    public AsyncMovementResult(bool ready = false, MovementResult? movementResult = null, Task? responseHandlerTask = null)
+    {
+        Ready = ready;
+        MovementResult = movementResult;
+        ResponseHandlerTask = responseHandlerTask ?? Task.CompletedTask;
+    }
 }
 
 public struct MovementResult

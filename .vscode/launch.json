@@ -11,6 +11,17 @@
         "cwd": "${workspaceFolder}",
         "stopAtEntry": false,
         "console": "integratedTerminal"
+      },
+      {
+        "name": "Debug solution",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build solution",
+        "program": "${workspaceFolder}/example-solution/bin/Debug/net7.0/example-solution.dll",
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "stopAtEntry": true,
+        "console": "integratedTerminal"
       }
     ]
   }

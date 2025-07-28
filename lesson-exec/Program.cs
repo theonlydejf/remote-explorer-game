@@ -9,6 +9,10 @@ Tile?[][,] challangeMaps =
     GameFactory.MapFromImage("resources/challenge-1.png"),
     GameFactory.MapFromImage("resources/challenge-2.png"),
     GameFactory.MapFromImage("resources/challenge-3.png"),
+    GameFactory.MapFromImage("resources/challenge-4.png"),
+    GameFactory.MapFromImage("resources/challenge-5.png"),
+    GameFactory.MapFromImage("resources/challenge-6.png"),
+    GameFactory.MapFromImage("resources/challenge-7.png")
 };
 
 Console.CursorVisible = false;
@@ -74,7 +78,7 @@ class SessionConnectedLogger
             {
                 logger.Write("Agent connection failed (", ConsoleColor.Red);
                 logger.Write(world, worldColor);
-                logger.Write(")", ConsoleColor.Red);
+                logger.WriteLine(")", ConsoleColor.Red);
                 return;
             }
 
