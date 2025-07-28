@@ -51,7 +51,7 @@ session.Move(new Vector(1, 0)); // move right
 
 [`example-simple`](./example-simple/Program.cs) — moves an agent in a square using synchronous calls.
 
-## 🧵 Feedback and Error Handling
+### 🧵 Feedback and Error Handling
 
 [`example-feedback`](./example-feedback/Program.cs) — shows how to safely check movement results and handle potential errors such as null results, timeouts, or invalid server states. Ideal for debugging.
 
@@ -70,6 +70,10 @@ session.Move(new Vector(1, 0)); // move right
 ### 🧭 Basic Pathfinding Solution
 
 [`example-solution`](./example-solution/Program.cs) — demonstrates how to implement a simple pathfinding algorithm that explores the map intelligently using visited node tracking and heuristic movement.
+
+### 🧭 Basic Cusrom Server
+
+[`example-custom-server`](./example-custom-server/Program.cs) - basic example of how to create and work with a server for your students
 
 ---
 
@@ -158,6 +162,7 @@ Use `./build.sh --help` for more info
 | `example-async/`                 | Async client logic                           |
 | `example-async-multiple-agents/` | Fully async, multi-agent demo                |
 | `example-solution`               | Solution using A* pathfinding                |
+| `example-custom-server`          | Simple custom server example                 |
 | `resources/test-map.png`         | Sample map                                   |
 | `build.sh`                       | Build + package script                       |
 
