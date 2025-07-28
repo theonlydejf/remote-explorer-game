@@ -1,6 +1,7 @@
 
 # Program specific
 lib-test/
+resources/challenges
 
 # Created by https://www.toptal.com/developers/gitignore/api/csharp,visualstudiocode,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,visualstudiocode,macos

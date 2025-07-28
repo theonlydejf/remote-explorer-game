@@ -2,22 +2,27 @@
 using ExplorerGame.Core;
 using ExplorerGame.ConsoleVisualizer;
 using ExplorerGame.Net;
+using System.Text.RegularExpressions;
 
 Tile?[,] map = GameFactory.MapFromImage("resources/test-map.png");
-Tile?[][,] challangeMaps =
+
+string resourcesPath = "resources";
+string challengesDir = Path.Combine(resourcesPath, "challenges");
+string[] challengeFiles = Array.Empty<string>();
+if (Directory.Exists(challengesDir))
 {
-    GameFactory.MapFromImage("resources/challenge-1.png"),
-    GameFactory.MapFromImage("resources/challenge-2.png"),
-    GameFactory.MapFromImage("resources/challenge-3.png"),
-    GameFactory.MapFromImage("resources/challenge-4.png"),
-    GameFactory.MapFromImage("resources/challenge-5.png"),
-    GameFactory.MapFromImage("resources/challenge-6.png"),
-    GameFactory.MapFromImage("resources/challenge-7.png")
-};
+    challengeFiles = Directory.GetFiles(challengesDir, "challenge-*.png")
+        .Where(f => Regex.IsMatch(Path.GetFileName(f), @"^challenge-\d+\.png$"))
+        .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
+        .ToArray();
+}
+
+Tile?[][,] challangeMaps = challengeFiles
+    .Select(f => GameFactory.MapFromImage(f))
+    .ToArray();
 
 Console.CursorVisible = false;
 Console.Clear();
-
 
 Logger logger = new Logger(1, map.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - map.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
 
