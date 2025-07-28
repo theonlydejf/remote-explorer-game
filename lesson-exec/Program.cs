@@ -23,15 +23,24 @@ Tile?[][,] challangeMaps = challengeFiles
 
 Console.CursorVisible = false;
 Console.Clear();
+Console.ForegroundColor = ConsoleColor.DarkGray;
+Console.Write("Press ESC or Q to exit");
 
 Logger logger = new Logger(1, map.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - map.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
 
 CancellationTokenSource cts = new();
 
-ConsoleVisualizer viz = new ConsoleVisualizer(new (Console.WindowWidth / 2 - (map.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
+ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (map.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
+
 ConnectionHandler testConnectionHandler = new(map, viz);
-testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
 Task testServerTask = testConnectionHandler.StartHttpServer(8080, cts.Token);
+
+RemoteGameSessionFactory factory = new("http://localhost:8080/", "map-init");
+SessionIdentifier mapInitSID = new SessionIdentifier("..", ConsoleColor.DarkGray);
+RemoteGameSession session1 = factory.Create(mapInitSID);
+session1.MoveAsync(new(-1, 0));
+
+testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
 
 logger.WriteLine("Test server started on port 8080", ConsoleColor.Yellow);
 
@@ -45,11 +54,7 @@ for (int i = 0; i < challangeMaps.Length; i++)
     logger.WriteLine($"Challenge {i + 1} server started on port {8080 + i + 1}", ConsoleColor.Yellow);
 }
 
-RemoteGameSessionFactory factory = new("http://localhost:8080/", "Velky David");
-SessionIdentifier id1 = new SessionIdentifier("()", ConsoleColor.Green);
-RemoteGameSession session1 = factory.Create(id1);
-
-while (Console.ReadKey(true).Key != ConsoleKey.Escape)
+while (!new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(Console.ReadKey(true).Key))
 {
     // Pass
 }
