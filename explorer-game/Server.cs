@@ -1,14 +1,13 @@
 namespace ExplorerGame.Net;
 
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using ExplorerGame.Core;
 using ExplorerGame.Base;
 using ExplorerGame.ConsoleVisualizer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
 public class SessionConnectedEventArgs : EventArgs
 {
@@ -153,17 +152,20 @@ public class ConnectionHandler
                 SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
                     session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
-                string username = args.Value<string>("username") ?? "unknown";
+                string username = args.Value<string>("username")?.Trim() ?? "unknown";
+                username = Regex.Replace(username, @"\s+", " ");
+                username = Regex.Replace(username, @"\p{C}", "");
+
                 if (username.Length > 15)
                     username = username.Substring(0, 12) + "...";
                 SessionConnected?.Invoke(this, new
-                    (
-                        username,
-                        args.Value<string>("clientId") ?? throw new Exception("clientId missing"),
-                        session?.SessionIdentifier,
-                        session?.Session,
-                        response
-                    ));
+                (
+                    username,
+                    args.Value<string>("clientId") ?? throw new Exception("clientId missing"),
+                    session?.SessionIdentifier,
+                    session?.Session,
+                    response
+                ));
                 break;
             case "/move":
                 (response, _) = HandleMove(args);
@@ -179,6 +181,9 @@ public class ConnectionHandler
     {
         string clientId = args.Value<string>("clientId")!;
         string identifier = args.Value<string>("identifier")!;
+        identifier = Regex.Replace(identifier, @"\s+", " ");
+        identifier = Regex.Replace(identifier, @"\p{C}", "");
+
         ConsoleColor color = Enum.Parse<ConsoleColor>(args.Value<string>("color")!);
 
         lock (sync)
