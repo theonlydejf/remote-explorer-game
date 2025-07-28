@@ -139,8 +139,10 @@ static class Config
     [CLIHelp("Initial map height.")]
     public static uint MAP_START_HEIGHT = 10;
     [CLIHelp("How much to grow the map in one dimension.")]
+    [CLIConfigCheckBounds(1, double.PositiveInfinity)]
     public static uint MAP_GROW_SIZE_1D = 6;
     [CLIHelp("How much to grow the map in two dimensions.")]
+    [CLIConfigCheckBounds(1, double.PositiveInfinity)]
     public static uint MAP_GROW_SIZE_2D = 3;
 
     [CLIHelp("Prefix used in agent's SID.")]
@@ -152,6 +154,7 @@ static class Config
     [CLIHelp("Number of the total agents should have jumping enabled.")]
     public static uint AGENT_JUMPER_CNT = 5;
     [CLIHelp("Max tries for agent to find a destination.")]
+    [CLIConfigCheckBounds(1, double.PositiveInfinity)]
     public static uint AGENT_MAX_TRIES = 10;
 
     [CLIHelp("Server IP address.")]
@@ -162,7 +165,8 @@ static class Config
     public static string PLAYER_NAME = "Example";
 
     [CLIHelp("Display update interval in milliseconds.")]
-    public static uint DISPLAY_UPDATE_INETRVAL_MS = 20;
+    [CLIConfigCheckBounds(1, double.PositiveInfinity)]
+    public static uint DISPLAY_UPDATE_INTERVAL_MS = 20;
 
     /// <summary>
     /// Updates config fields from CLI args in the form --field=value. Case insensitive, udnerscores
@@ -202,6 +206,19 @@ static class Config
                 object converted = field.FieldType.IsEnum
                     ? Enum.Parse(field.FieldType, value, true)
                     : Convert.ChangeType(value, field.FieldType);
+                
+                var attr = field.GetCustomAttribute<CLIConfigCheckBounds>();
+                if (attr != null && !attr.IsInBounds(converted))
+                {
+                    error = true;
+                    Console.Write("[");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("Warning");
+                    Console.ResetColor();
+                    Console.WriteLine($"] Value {value} is not in bounds for {field.Name} (min={attr.Min}, max={attr.Max}). Ignoring...");
+                    continue;
+                }
+
                 field.SetValue(null, converted);
             }
             catch
@@ -239,7 +256,45 @@ static class Config
 public class CLIHelpAttribute : Attribute
 {
     public string HelpText { get; }
-    public CLIHelpAttribute(string helpText) => HelpText = helpText;
+
+    public CLIHelpAttribute(string helpText)
+    {
+        HelpText = helpText;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Field)]
+public class CLIConfigCheckBounds : Attribute
+{
+    // Use double.MinValue and double.MaxValue as sentinels for "no bound"
+    public double Min { get; }
+    public double Max { get; }
+
+    public CLIConfigCheckBounds(double min, double max)
+    {
+        Min = min;
+        Max = max;
+    }
+
+    /// <summary>
+    /// Checks if the given value is within the bounds specified by this attribute.
+    /// Supports numeric types (int, uint, float, double, long, etc.).
+    /// </summary>
+    public bool IsInBounds(object value)
+    {
+        if (value == null)
+            return false;
+
+        try
+        {
+            double d = Convert.ToDouble(value);
+            return (!double.IsRealNumber(Min) || d >= Min) && (!double.IsRealNumber(Max) || d <= Max);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
 
 class Program
@@ -281,7 +336,7 @@ class Program
             }
 
             // Limit display updates
-            if (DateTime.Now.Subtract(lastDisplayUpdate) < TimeSpan.FromMilliseconds(Config.DISPLAY_UPDATE_INETRVAL_MS))
+            if (DateTime.Now.Subtract(lastDisplayUpdate) < TimeSpan.FromMilliseconds(Config.DISPLAY_UPDATE_INTERVAL_MS))
                 continue;
             lastDisplayUpdate = DateTime.Now;
 
