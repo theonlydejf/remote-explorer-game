@@ -131,6 +131,7 @@ class Agent
         {
             newDestination();
         }
+        result = new AsyncMovementResult(); // Watrning ://
         Step();
     }
 
@@ -176,7 +177,6 @@ class Agent
         }
 
         result = GameSession.MoveAsync(currStep.Value);
-        // result.ResponseHandlerTask.ContinueWith(x => AfterStep());
     }
 
     private void newDestination()
