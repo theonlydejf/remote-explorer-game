@@ -4,64 +4,75 @@ using ExplorerGame.ConsoleVisualizer;
 using ExplorerGame.Net;
 using System.Text.RegularExpressions;
 
-Tile?[,] map = GameFactory.MapFromImage("resources/test-map.png");
-
-string resourcesPath = "resources";
-string challengesDir = Path.Combine(resourcesPath, "challenges");
-string[] challengeFiles = Array.Empty<string>();
-if (Directory.Exists(challengesDir))
+public static class ConsoleSync
 {
-    challengeFiles = Directory.GetFiles(challengesDir, "challenge-*.png")
-        .Where(f => Regex.IsMatch(Path.GetFileName(f), @"^challenge-\d+\.png$"))
-        .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
-        .ToArray();
+    public static object sync = new object();
 }
 
-Tile?[][,] challangeMaps = challengeFiles
-    .Select(f => GameFactory.MapFromImage(f))
-    .ToArray();
-
-Console.CursorVisible = false;
-Console.Clear();
-Console.ForegroundColor = ConsoleColor.DarkGray;
-Console.Write("Press ESC or Q to exit");
-
-Logger logger = new Logger(1, map.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - map.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
-
-CancellationTokenSource cts = new();
-
-ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (map.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
-
-ConnectionHandler testConnectionHandler = new(map, viz);
-Task testServerTask = testConnectionHandler.StartHttpServer(8080, cts.Token);
-
-RemoteGameSessionFactory factory = new("http://localhost:8080/", "map-init");
-SessionIdentifier mapInitSID = new SessionIdentifier("..", ConsoleColor.DarkGray);
-RemoteGameSession session1 = factory.Create(mapInitSID);
-session1.MoveAsync(new(-1, 0));
-
-testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
-
-logger.WriteLine("Test server started on port 8080", ConsoleColor.Yellow);
-
-ConnectionHandler[] challangeConnectionHandlers = new ConnectionHandler[challangeMaps.Length];
-Task[] challengeServerTasks = new Task[challangeMaps.Length];
-for (int i = 0; i < challangeMaps.Length; i++)
+public partial class Program
 {
-    challangeConnectionHandlers[i] = new ConnectionHandler(challangeMaps[i], null);
-    challangeConnectionHandlers[i].SessionConnected += new SessionConnectedLogger(logger, $"Challenge {i + 1}", ConsoleColor.Green).Handler;
-    challengeServerTasks[i] = challangeConnectionHandlers[i].StartHttpServer(8080 + i + 1, cts.Token);
-    logger.WriteLine($"Challenge {i + 1} server started on port {8080 + i + 1}", ConsoleColor.Yellow);
-}
+    public static void Main(string[] args)
+    {
+        // Test world map
+        Tile?[,] testWorldMap = GameFactory.MapFromImage("resources/test-map.png");
 
-while (!new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(Console.ReadKey(true).Key))
-{
-    // Pass
-}
+        // Load challange world maps
+        string resourcesPath = "resources";
+        string challengesDir = Path.Combine(resourcesPath, "challenges");
+        string[] challengeFiles = Array.Empty<string>();
+        if (Directory.Exists(challengesDir))
+        {
+            challengeFiles = Directory.GetFiles(challengesDir, "challenge-*.png")
+                .Where(f => Regex.IsMatch(Path.GetFileName(f), @"^challenge-\d+\.png$"))
+                .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
+                .ToArray();
+        }
+        Tile?[][,] challangeMaps = challengeFiles
+            .Select(f => GameFactory.MapFromImage(f))
+            .ToArray();
 
-Console.CursorVisible = true;
-Console.Clear();
-cts.Cancel();
+        // Initial terminal setup
+        Console.CursorVisible = false;
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.Write("Press ESC or Q to exit");
+
+        CancellationTokenSource cts = new();
+
+        // Setup views
+        Logger logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
+        ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (testWorldMap.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
+        viz.AttachMap(testWorldMap);
+
+        // Start test world server
+        ConnectionHandler testConnectionHandler = new(testWorldMap, viz);
+        Task testServerTask = testConnectionHandler.StartHttpServer(8080, cts.Token);
+        testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
+        logger.WriteLine("Test server started on port 8080", ConsoleColor.Yellow);
+
+        // Start challenge world servers
+        ConnectionHandler[] challangeConnectionHandlers = new ConnectionHandler[challangeMaps.Length];
+        Task[] challengeServerTasks = new Task[challangeMaps.Length];
+        for (int i = 0; i < challangeMaps.Length; i++)
+        {
+            challangeConnectionHandlers[i] = new ConnectionHandler(challangeMaps[i], null);
+            challangeConnectionHandlers[i].SessionConnected += new SessionConnectedLogger(logger, $"Challenge {i + 1}", ConsoleColor.Green).Handler;
+            challengeServerTasks[i] = challangeConnectionHandlers[i].StartHttpServer(8080 + i + 1, cts.Token);
+            logger.WriteLine($"Challenge {i + 1} server started on port {8080 + i + 1}", ConsoleColor.Yellow);
+        }
+
+        // Wait until exit key is pressed
+        while (!new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(Console.ReadKey(true).Key))
+        {
+            // Pass
+        }
+
+        // Clear up the terminal
+        Console.CursorVisible = true;
+        Console.Clear();
+        cts.Cancel();
+    }
+}
 
 class SessionConnectedLogger
 {
@@ -108,11 +119,6 @@ class SessionConnectedLogger
 
         e.GameSession.AgentDied += new AgentDiedLogger(e, logger, world, worldColor).Handler;
     }
-}
-
-public static class ConsoleSync
-{
-    public static object sync = new object();
 }
 
 class AgentDiedLogger
