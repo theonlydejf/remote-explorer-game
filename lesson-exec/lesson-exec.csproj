@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\resources\test-map.png"
+            Link="resources/test-map.png"
+            CopyToOutputDirectory="PreserveNewest"
+            CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../explorer-game/explorer-game.csproj" />
   </ItemGroup>
 

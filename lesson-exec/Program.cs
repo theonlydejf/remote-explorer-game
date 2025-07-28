@@ -14,7 +14,7 @@ public partial class Program
     public static void Main(string[] args)
     {
         // Test world map
-        Tile?[,] testWorldMap = GameFactory.MapFromImage("resources/test-map.png");
+        Tile?[,] testWorldMap = GameFactory.MapFromImage(Path.Combine(AppContext.BaseDirectory, "resources", "test-map.png"));
 
         // Load challange world maps
         string resourcesPath = "resources";
@@ -31,16 +31,32 @@ public partial class Program
             .Select(f => GameFactory.MapFromImage(f))
             .ToArray();
 
-        // Initial terminal setup
-        Console.CursorVisible = false;
-        Console.Clear();
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.Write("Press ESC or Q to exit");
 
         CancellationTokenSource cts = new();
 
-        // Setup views
-        Logger logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
+        Logger logger;
+        while (true)
+        {
+            // Initial terminal setup
+            Console.CursorVisible = false;
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write("Press ESC or Q to exit");
+            Console.ResetColor();
+
+            try
+            {
+                logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
+                break;
+            }
+            catch
+            {
+                Console.Clear();
+                Console.WriteLine("Terminal window is too small. Resize it and press any key to try again...");
+                Console.ReadKey(true);
+            }
+        } 
+
         ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (testWorldMap.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
         viz.AttachMap(testWorldMap);
 

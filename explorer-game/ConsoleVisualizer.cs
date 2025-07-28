@@ -158,6 +158,7 @@ public class ConsoleVisualizer
 
         lock (consoleLock)
         {
+            Console.ResetColor();
             Console.SetCursorPosition(windowLocation.X, windowLocation.Y);
             Console.Write($"┌{new string('─', w * 2)}┐");
             for (int y = 0; y < h; y++)
