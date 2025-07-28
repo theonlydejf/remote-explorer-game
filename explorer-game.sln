@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-async-multiple-agen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lesson-exec", "lesson-exec\lesson-exec.csproj", "{60071A51-83E2-45A3-A69C-5EF102E51149}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "solution", "solution\solution.csproj", "{67E0DB44-7794-4EB0-B284-E7660E2CFB21}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-solution", "example-solution\example-solution.csproj", "{67E0DB44-7794-4EB0-B284-E7660E2CFB21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
