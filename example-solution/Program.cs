@@ -378,11 +378,14 @@ class Agent
         get => allowJumps;
         set
         {
+            if (allowJumps != value)
+            {
+                if (value)
+                    JumpingAgentsCnt++;
+                else
+                    JumpingAgentsCnt--;
+            }
             allowJumps = value;
-            if (value)
-                JumpingAgentsCnt++;
-            else
-                JumpingAgentsCnt--;
         }
     }
     private bool allowJumps;
@@ -480,6 +483,7 @@ class Agent
 
     private void newDestination()
     {
+        releaseReservedCell();
         Destination = getClosestPos();
         reserveCell(Destination);
     }
