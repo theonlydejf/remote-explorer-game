@@ -17,7 +17,7 @@
         "type": "process",
         "args": [
           "build",
-          "${workspaceFolder}/solution/solution.csproj"
+          "${workspaceFolder}/example-solution/example-solution.csproj"
         ],
         "problemMatcher": "$msCompile"
       }

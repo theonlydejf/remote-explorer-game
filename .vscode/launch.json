@@ -17,7 +17,7 @@
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build solution",
-        "program": "${workspaceFolder}/solution/bin/Debug/net7.0/solution.dll",
+        "program": "${workspaceFolder}/example-solution/bin/Debug/net7.0/example-solution.dll",
         "args": [],
         "cwd": "${workspaceFolder}",
         "stopAtEntry": true,
