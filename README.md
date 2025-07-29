@@ -148,6 +148,11 @@ Default RIDs: `win-x64`, `linux-x64`, `osx-x64`, etc.
 
 Use `./build.sh --help` for more info
 
+### 🖥️ Build on a Windows machine
+
+You can use [Git Bash](https://git-scm.com/downloads) to run the build script.
+You'll also need the `zip` command for the script to run properly. You can find a good step by step guide in [this](https://stackoverflow.com/a/55749636) answer on Stack Overflow.
+
 ---
 
 ## 🧱 Project Structure
