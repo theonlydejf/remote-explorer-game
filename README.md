@@ -71,7 +71,7 @@ session.Move(new Vector(1, 0)); // move right
 
 [`example-solution`](./example-solution/Program.cs) — demonstrates how to implement a simple pathfinding algorithm that explores the map intelligently using visited node tracking and heuristic movement.
 
-### 🧭 Basic Cusrom Server
+### 🧭 Basic Custom Server
 
 [`example-custom-server`](./example-custom-server/Program.cs) - basic example of how to create and work with a server for your students
 
