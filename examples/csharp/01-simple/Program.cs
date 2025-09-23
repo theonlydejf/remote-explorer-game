@@ -1,6 +1,16 @@
-﻿using System;
+﻿/* 
+ Example: Simple movement of an agent
 
-////////// Potreba pridat tyto using //////////
+ - Connects to the server and creates a single agent.
+ - Assigns the agent a visual identifier (icon + color).
+ - Demonstrates basic moves: right, left, up, down, and a jump.
+ - Then loops forever, making the agent walk in a square.
+ 
+ - The goal is to show how to connect, control movement, 
+   and run continuous actions.
+*/
+
+// Add these usings
 using ExplorerGame.Core;
 using ExplorerGame.Net;
 
@@ -10,38 +20,38 @@ namespace ExampleSimple
     {
         static void Main(string[] args)
         {
-            // Priprav objekt ("tovarnu"), ktera nam pomuze vytvaret agenty a pripojovat se k nim
+            // Prepare an object ("factory") that helps us create agents and connect to them
             string address = "http://127.0.0.1:8080/";
-            string username = "Ukazka";
+            string username = "Example";
             RemoteGameSessionFactory factory = new RemoteGameSessionFactory(address, username);
 
-            // Priprav graficky identifikator, ktery se ukaze na obrazovce serveru
-            // ! Kazdy musi mit svuj, nemuze se stat ze vice lidi bude mit stejny !
+            // Prepare a graphical identifier that will be shown on the server screen
+            // ! Everyone must have their own, it cannot happen that multiple people have the same one !
             string img = "[]";
             ConsoleColor color = ConsoleColor.Magenta;
             SessionIdentifier sessionIdentifier = new SessionIdentifier(img, color);
 
-            // Vytvori agenta a pripoji se k nemu
+            // Create an agent and connect to it
             RemoteGameSession session = factory.Create(sessionIdentifier);
 
-            // Datovy typ kterym definujeme smer pohybu.
-            //    Vzdalenost v ose X ──┐   ┌── Vzdalenost v ose Y
-            //                         V   V
+            // Data type used to define the direction of movement.
+            //    Distance on the X axis ──┐   ┌── Distance on the Y axis
+            //                             V   V
             Vector vector = new Vector(0, 0);
 
-            session.Move(new Vector(1, 0)); // Pohni se doprava
-            Thread.Sleep(500);              // Cekej 0.5 vteriny (500ms)
-            session.Move(new Vector(-1, 0)); // Pohni se doleva
+            session.Move(new Vector(1, 0)); // Move right
+            Thread.Sleep(500);              // Wait 0.5 seconds (500ms)
+            session.Move(new Vector(-1, 0)); // Move left
             Thread.Sleep(500);
-            session.Move(new Vector(0, 1));  // Pohni se nahoru
+            session.Move(new Vector(0, 1));  // Move up
             Thread.Sleep(500);
-            session.Move(new Vector(0, -1)); // Pohni se dolu
-            Thread.Sleep(500);
-
-            session.Move(new Vector(2, 0));  // Skoc doprava
+            session.Move(new Vector(0, -1)); // Move down
             Thread.Sleep(500);
 
-            // Do nekonecna chod ve ctverci
+            session.Move(new Vector(2, 0));  // Jump right
+            Thread.Sleep(500);
+
+            // Walk in a square forever
             while (true)
             {
                 MoveNTimes(4, new Vector(1, 0), session);

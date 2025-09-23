@@ -1,4 +1,15 @@
-﻿using ExplorerGame.Base;
+﻿/* 
+ Example: Running a simple game server
+
+ - Builds a small 5x5 map with a few traps.
+ - Sets up a console view that shows the map and a logger underneath it.
+ - Starts a local HTTP server on port 8080 for agents to connect.
+ - Logs each new connection with the agent’s username and ID.
+ - Keeps running until ESC is pressed, then shuts down cleanly.
+
+ - The goal is to show how to host a basic game server and visualize it in the console.
+*/
+
 using ExplorerGame.Core;
 using ExplorerGame.Net;
 using ExplorerGame.ConsoleVisualizer;
@@ -7,58 +18,62 @@ class Program
 {
     static void Main()
     {
-        // Vytvoreni jednoduche mapy 5x5 s nekolika pastmi
+        // Create a simple 5x5 map with a few traps (marked as "##")
         Tile?[,] map = new Tile?[5, 5];
         map[1, 1] = "##";
         map[2, 3] = "##";
         map[4, 0] = "##";
 
-        // Skryje kurzor a vycisti konzoli
+        // Clear the console and hide the cursor for a clean view
         Console.Clear();
         Console.CursorVisible = false;
 
-        // Objekt pro synchronizaci vypisu do konzole
+        // Object used to synchronize console output 
+        // (so map and log don’t overwrite each other)
         object syncObject = new object();
 
-        // Vytvoreni loggeru pod mapou
-        int loggerTop = 5 + 2; // 5 radku mapy + ramecek
-        Logger logger = new Logger(1, loggerTop, Console.WindowWidth - 2, 10, ConsoleColor.White, Console.BackgroundColor, syncObject);
+        // Create a logger below the map (with a 2-line gap for the frame => map_height + gap)
+        int loggerTop = 5 + 2; 
+        Logger logger = new Logger(1, loggerTop, Console.WindowWidth - 2, 10, 
+                                   ConsoleColor.White, Console.BackgroundColor, syncObject);
 
-        // Vytvoreni vizualizace mapy
+        // Create a visualizer for the map and attach the map to it
         ConsoleVisualizer viz = new ConsoleVisualizer(new Vector(1, 0), syncObject);
         viz.AttachMap(map);
 
-        // Vytvoreni serveru pro obsluhu pripojeni a pohybu
+        // Create a connection handler (server) to handle agent connections and movements
         ConnectionHandler server = new ConnectionHandler(map, viz);
 
-        // Prikad vyuziti loggeru -> zaznamenej kazde nove pripojeni 
+        // Example of using the logger:
+        // Log every new connection with username and session ID
         server.SessionConnected += (sender, e) =>
         {
             lock (syncObject)
             {
                 logger.Write("[", ConsoleColor.White);
                 logger.Write(e.ClientUsername, ConsoleColor.Yellow);
-                logger.Write("] pripojen s ID ", ConsoleColor.White);
+                logger.Write("] connected with ID ", ConsoleColor.White);
                 if (e.SessionIdentifier != null)
                     logger.WriteLine(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
                 else
-                    logger.WriteLine("(nezname ID)", ConsoleColor.Red);
+                    logger.WriteLine("(unknown ID)", ConsoleColor.Red);
             }
         };
 
-        // Token pro zastaveni serveru
+        // Token to stop the server later
         CancellationTokenSource cancelToken = new CancellationTokenSource();
 
-        // Spusteni HTTP serveru na portu 8080
+        // Run the HTTP server on port 8080 in a background task
         Task.Run(() => server.StartHttpServer(8080, cancelToken.Token));
 
-        logger.WriteLine("Server bezi na portu 8080", ConsoleColor.Green);
-        logger.WriteLine("Stiskni ESC pro ukonceni", ConsoleColor.DarkGray);
+        // Log server status messages
+        logger.WriteLine("Server running on port 8080", ConsoleColor.Green);
+        logger.WriteLine("Press ESC to exit", ConsoleColor.DarkGray);
 
-        // Ceka na stisknuti klavesy ESC
+        // Wait until the ESC key is pressed
         while (Console.ReadKey(true).Key != ConsoleKey.Escape) {}
 
-        // Zastavi server a vycisti konzoli
+        // Stop the server and restore the console
         cancelToken.Cancel();
         Console.Clear();
         Console.CursorVisible = true;

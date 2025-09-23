@@ -1,5 +1,19 @@
-﻿using System;
-using System.Drawing;
+﻿/* 
+ Example: Feedback and error handling
+
+ - Connects to a single agent and checks if it is alive.
+ - Demonstrates how each move returns feedback about success 
+   and survival.
+ - Covers different cases: invalid moves, collisions, 
+   or death.
+ ADVANCED SECTION:
+ - Shows how to handle server messages when something goes 
+   wrong (like inactivity timeouts).
+
+ - The goal is to teach how to read movement results and 
+   respond to errors in the game.
+*/
+
 using ExplorerGame.Core;
 using ExplorerGame.Net;
 
@@ -9,67 +23,69 @@ namespace ExampleFeedback
     {
         static void Main(string[] args)
         {
-            // Pripoj se k agentovi
-            RemoteGameSessionFactory factory = new RemoteGameSessionFactory("http://127.0.0.1:8080/", "Ukazka");
+            // Connect to the server and create one agent
+            RemoteGameSessionFactory factory = new RemoteGameSessionFactory("http://127.0.0.1:8080/", "Example");
             RemoteGameSession session = factory.Create(new SessionIdentifier("[]", ConsoleColor.Magenta));
 
-            // Nejjednodussi zpusob jak zjistit jestli agent zije
-            // Session automaticky aktualizuje tuhle hodnotu po kazde provedene akci
+            // The simplest way to check if the agent is alive
+            // Session automatically updates this value after each action
             if (session.IsAgentAlive)
             {
-                Console.WriteLine("Agent zije");
+                Console.WriteLine("Agent is alive");
             }
             else
             {
-                Console.WriteLine("Agent nezije");
+                Console.WriteLine("Agent is not alive");
             }
 
-            // Kazde volani session.Move(...) vraci informaci o tom jak probehlo
-            MovementResult result = session.Move(new Vector(1, 0)); // Vse probehne uspesne
+            // Each call to session.Move(...) returns information about the result
+            MovementResult result = session.Move(new Vector(1, 0)); // Everything succeeds
 
-            // Agent narazi do zdi
-            //  => uspesny pohyb ale neprezije
-            // MovementResult result = session.Move(new Vector(-1, 0));
+            // Invalid move => unsuccessful move but survives
+            // result = session.Move(new Vector(6, -9)); // Uncomment me to try me out
 
-            // Nepovoleny pohyb
-            //  => neuspesny pohyb ale prezije
-            // MovementResult result = session.Move(new Vector(6, -9));
+            // Agent hits a wall => successful move but does not survive
+            result = session.Move(new Vector(0, -1)); // Uncomment me to try me out
 
-            if (result.IsAgentAlive) // Zjisti jestli agent dany pohyb prezil
+            if (result.IsAgentAlive) // Check if the agent survived the move
             {
-                Console.WriteLine("Agent prezil pohyb");
+                Console.WriteLine("Agent survived the move");
             }
             else
             {
-                Console.WriteLine("Agent neprezil pohyb");
+                Console.WriteLine("Agent did not survive the move");
             }
 
-            if (result.MovedSuccessfully) // Zjisti jestli pohyb probehl
+            if (result.MovedSuccessfully) // Check if the move was successful
             {
-                Console.WriteLine("Pohyb probehl uspesne");
+                Console.WriteLine("Move was successful");
             }
             else
             {
-                // Muze se stat pokud se snazim komunikovat s agentem co uz nezije
-                // nebo provadim nepovoleny pohyb (napriklad new Vector(10, -68))
-                Console.WriteLine("Pohyb neprobehl uspesne");
+                // Can happen if trying to communicate with an agent that is already dead
+                // or performing an invalid move (e.g., new Vector(10, -68))
+                Console.WriteLine("Move was not successful");
             }
 
-            /////////// POKROCILE ///////////
+            /////////// ADVANCED ///////////
 
-            Console.WriteLine("Cekam...");
-            Thread.Sleep(6100); // Pockam nez server agenta vyhodi za dlouhou neaktivitu
-            MovementResult killedMoveResult = session.Move(new Vector(1, 0));
-            Console.WriteLine($"Zije: {killedMoveResult.IsAgentAlive}, Pohyb byl uspesny: {killedMoveResult.MovedSuccessfully}");
+            Console.WriteLine("Waiting...");
+            Thread.Sleep(6100); // Wait until the server kicks the agent for inactivity
+            MovementResult kickedMoveResult = session.Move(new Vector(1, 0));
+            Console.WriteLine($"Alive: {kickedMoveResult.IsAgentAlive}, Move was successful: {kickedMoveResult.MovedSuccessfully}");
 
-            // Co delat pokud nevim proc agent z niceho nic umrel a nemuzu s nim najednou hybat?
-            // Server pri neuspesnem pokusu o pohyb posila zpet zpravu proc to nemohl udelat.
+            // What to do if I don't know why the agent suddenly died and I can't move it anymore?
+            // The server sends back a message explaining why the move failed.
 
-            // Zkontroluji jestli mi zprava prisla (ne vzdy musi prijit)
+            // Check if a message was received (message is not guaranteed with any response)
             if (session.LastResponseMessage != null)
             {
-                // Vypisu zpravu
-                Console.WriteLine("Zprava: " + session.LastResponseMessage);
+                // Print the message
+                Console.WriteLine("Message: " + session.LastResponseMessage);
+            }
+            else
+            {
+                Console.WriteLine("No message received");
             }
         }
     }
