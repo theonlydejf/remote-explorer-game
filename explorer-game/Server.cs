@@ -9,12 +9,35 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Event args for a successful session connection, including sanitized client/user info,
+/// the chosen session identifier, optional local session reference, and the response payload.
+/// </summary>
 public class SessionConnectedEventArgs : EventArgs
 {
+    /// <summary>
+    /// Username provided by the client (sanitized and possibly truncated).
+    /// </summary>
     public string ClientUsername { get; set; }
+
+    /// <summary>
+    /// Client network identifier (usually IP:port).
+    /// </summary>
     public string ClientID { get; set; }
+
+    /// <summary>
+    /// Identifier used to render this session
+    /// </summary>
     public SessionIdentifier? SessionIdentifier { get; set; }
+
+    /// <summary>
+    /// Local game session created for the client, if any.
+    /// </summary>
     public LocalGameSession? GameSession { get; set; }
+
+    /// <summary>
+    /// Raw JSON response returned to the client during connect.
+    /// </summary>
     public JObject Response { get; set; }
 
     public SessionConnectedEventArgs(string clientUsername, string clientID, SessionIdentifier? sessionIdentifier, LocalGameSession? session, JObject response)
@@ -27,25 +50,54 @@ public class SessionConnectedEventArgs : EventArgs
     }
 }
 
+/// <summary>
+/// Handles HTTP requests for connecting clients and moving agents.
+/// Manages per-client session limits, session lifecycle, and visualization updates.
+/// </summary>
 public class ConnectionHandler
 {
     private readonly ConsoleVisualizer? visualizer;
     private readonly Tile?[,] map;
     private readonly object sync = new object();
 
+    /// <summary>
+    /// Per-client list of session IDs.
+    /// </summary>
     private readonly Dictionary<string, List<string>> clientSessions = new();
+
+    /// <summary>
+    /// Global map of sessionId -> session wrapper.
+    /// </summary>
     private readonly Dictionary<string, SessionWrapper> sessionsById = new();
+
+    /// <summary>
+    /// Idle timeout for killing inactive sessions.
+    /// </summary>
     private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Cooldown between actions per session.
+    /// </summary>
     private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(50);
 
+    /// <summary>
+    /// Raised after a successful /connect; includes sanitized username and created session data.
+    /// </summary>
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
 
+    /// <summary>
+    /// Creates a handler bound to a specific map; optionally hooks a visualizer for live updates.
+    /// </summary>
     public ConnectionHandler(Tile?[,] map, ConsoleVisualizer? visualizer)
     {
         this.map = map;
         this.visualizer = visualizer;
     }
 
+    /// <summary>
+    /// Starts an HTTP server loop on the given port. Processes /connect and /move POST requests.
+    /// Also runs a cleanup loop for idle sessions.
+    /// </summary>
     public async Task StartHttpServer(int port, CancellationToken token)
     {
         var listener = new HttpListener();
@@ -68,30 +120,40 @@ public class ConnectionHandler
             try
             {
                 string clientID = context.Request.RemoteEndPoint?.ToString() ?? "unknown";
+
+                // Read body with a short timeout to avoid hanging connections.
                 using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
                 string body = await reader.ReadToEndAsync(cts.Token).WaitAsync(cts.Token);
+
                 var args = JObject.Parse(body);
                 args["clientId"] = clientID;
 
-
+                // If sessionId is missing or unknown, route to HandleCommand directly.
                 if (!args.ContainsKey("sessionId"))
+                {
                     await SendResponse(HandleCommand(args, context), context);
+                }
                 else
                 {
                     string? sessionId = args.Value<string>("sessionId");
                     if (sessionId == null || !sessionsById.TryGetValue(sessionId, out SessionWrapper? session) || session == null)
+                    {
                         await SendResponse(HandleCommand(args, context), context);
+                    }
                     else
                     {
+                        // Serialize actions per session by chaining continuations on ActionQueue.
                         lock (sync)
                         {
-                            session.ActionQueue = session.ActionQueue.ContinueWith(
-                                _ => HandleCommandWithCooldown(args, context),
-                                CancellationToken.None,
-                                TaskContinuationOptions.None,
-                                TaskScheduler.Default
-                            ).Unwrap();
+                            session.ActionQueue = session.ActionQueue
+                                .ContinueWith(
+                                    _ => HandleCommandWithCooldown(args, context),
+                                    CancellationToken.None,
+                                    TaskContinuationOptions.None,
+                                    TaskScheduler.Default
+                                )
+                                .Unwrap();
                         }
                     }
                 }
@@ -110,6 +172,10 @@ public class ConnectionHandler
         listener.Stop();
     }
 
+    /// <summary>
+    /// Handles a single command and enforces a small cooldown before sending the response.
+    /// Used to throttle per-session action rate.
+    /// </summary>
     private async Task HandleCommandWithCooldown(JObject args, HttpListenerContext context)
     {
         JObject response;
@@ -129,6 +195,9 @@ public class ConnectionHandler
         await SendResponse(response, context);
     }
 
+    /// <summary>
+    /// Writes a JSON response and closes the response stream.
+    /// </summary>
     private async Task SendResponse(JObject response, HttpListenerContext context)
     {
         var responseString = response.ToString(Formatting.None);
@@ -141,6 +210,10 @@ public class ConnectionHandler
         context.Response.Close();
     }
 
+    /// <summary>
+    /// Command router for /connect and /move endpoints.
+    /// Applies username sanitization for connect, and forwards moves to the target session.
+    /// </summary>
     private JObject HandleCommand(JObject args, HttpListenerContext context)
     {
         JObject response;
@@ -149,15 +222,17 @@ public class ConnectionHandler
         {
             case "/connect":
                 (response, string? sessionId) = HandleConnect(args);
+
                 SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
-                    session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("WHAT :o")];
-                string username = args.Value<string>("username")?.Trim() ?? "unknown";
-                username = Regex.Replace(username, @"\s+", " ");
-                username = Regex.Replace(username, @"\p{C}", "");
+                    session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("Missing uuid in response")];
 
+                string username = args.Value<string>("username")?.Trim() ?? "unknown";
+                username = Regex.Replace(username, @"\s+", " ");   // collapse whitespace
+                username = Regex.Replace(username, @"\p{C}", "");   // remove control chars
                 if (username.Length > 15)
                     username = username.Substring(0, 12) + "...";
+
                 SessionConnected?.Invoke(this, new
                 (
                     username,
@@ -167,9 +242,11 @@ public class ConnectionHandler
                     response
                 ));
                 break;
+
             case "/move":
                 (response, _) = HandleMove(args);
                 break;
+
             default:
                 response = new JObject { ["success"] = false, ["message"] = "Unknown request" };
                 break;
@@ -177,6 +254,10 @@ public class ConnectionHandler
         return response;
     }
 
+    /// <summary>
+    /// Handles the /connect request. Validates identifier uniqueness, per-client session limits,
+    /// creates a LocalGameSession, and attaches it to the visualizer if present.
+    /// </summary>
     private (JObject, string? sessionId) HandleConnect(JObject args)
     {
         string clientId = args.Value<string>("clientId")!;
@@ -188,17 +269,20 @@ public class ConnectionHandler
 
         lock (sync)
         {
+            // Prevent identical identifier/color collisions across sessions.
             if (sessionsById.Values.Any(id => id.SessionIdentifier.Identifier == identifier && id.SessionIdentifier.Color == color))
                 return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))
                 clientSessions[clientId] = new();
 
+            // Limit sessions per client to avoid abuse.
             if (clientSessions[clientId].Count >= 5)
                 return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);
             session.AgentDied += AgentDied;
+
             string sessionId = Guid.NewGuid().ToString();
             var sid = new SessionIdentifier(identifier, color, map);
 
@@ -206,10 +290,14 @@ public class ConnectionHandler
             clientSessions[clientId].Add(sessionId);
 
             visualizer?.AttachGameSession(session, sid);
+
             return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sessionId);
         }
     }
 
+    /// <summary>
+    /// Removes a session from both global and per-client indices.
+    /// </summary>
     private void ForgetSession(string sessionId, string? clientID = null)
     {
         if (clientID == null)
@@ -218,6 +306,9 @@ public class ConnectionHandler
         sessionsById.Remove(sessionId);
     }
 
+    /// <summary>
+    /// Listener for agent death. Removes the session that owns the dead agent.
+    /// </summary>
     private void AgentDied(object? sender, AgentDiedEventArgs e)
     {
         if (sender is not LocalGameSession session || sender == null)
@@ -227,6 +318,10 @@ public class ConnectionHandler
         ForgetSession(sessionKeyValue.Key, sessionKeyValue.Value.ClientID);
     }
 
+    /// <summary>
+    /// Handles the /move request. Validates session existence, forwards the move,
+    /// and updates last activity if the move executed and the agent is alive.
+    /// </summary>
     private (JObject, string? sessionId) HandleMove(JObject request)
     {
         string sessionId = request.Value<string>("sessionId")!;
@@ -239,8 +334,9 @@ public class ConnectionHandler
                 return (new JObject { ["success"] = false, ["message"] = "Unknown sessionId" }, null);
 
             var result = session.Session.Move(new Vector(dx, dy));
-            if(result.IsAgentAlive && result.MovedSuccessfully)
+            if (result.IsAgentAlive && result.MovedSuccessfully)
                 UpdateActivity(sessionId);
+
             return
             (
                 new JObject
@@ -254,11 +350,17 @@ public class ConnectionHandler
         }
     }
 
+    /// <summary>
+    /// Updates the last-activity timestamp for a session.
+    /// </summary>
     private void UpdateActivity(string sessionId)
     {
         sessionsById[sessionId].LastActivity = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Periodically kills sessions that have been idle longer than <see cref="idleTimeout"/>.
+    /// </summary>
     public async Task CleanupLoop(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
@@ -275,12 +377,17 @@ public class ConnectionHandler
         }
     }
 
+    /// <summary>
+    /// Wraps a LocalGameSession with metadata used by the server.
+    /// </summary>
     private class SessionWrapper
     {
         public string ClientID { get; set; }
         public LocalGameSession Session { get; set; }
         public SessionIdentifier SessionIdentifier { get; set; }
         public DateTime LastActivity { get; set; }
+
+        // Used to serialize per-session actions in arrival order.
         public Task ActionQueue = Task.CompletedTask;
 
         public SessionWrapper(string clientID, LocalGameSession session, SessionIdentifier sessionIdentifier, DateTime lastActivity)

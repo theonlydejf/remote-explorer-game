@@ -7,21 +7,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "explorer-game", "explorer-g
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "local-exec", "local-exec\local-exec.csproj", "{833682ED-598E-4C3B-BE2C-1C26F6492225}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-simple", "example-simple\example-simple.csproj", "{592F811F-4736-4DB1-9E0B-67BA6FAEE253}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-multiple-agents", "example-multiple-agents\example-multiple-agents.csproj", "{0A607141-BF08-4D25-AF1A-3E10F135AB94}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-feedback", "example-feedback\example-feedback.csproj", "{43090959-2CCA-419D-88CE-CA7991C4A507}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-async", "example-async\example-async.csproj", "{6FAFDD8E-3236-49C0-B5A7-4CC9F73073BE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-async-multiple-agents", "example-async-multiple-agents\example-async-multiple-agents.csproj", "{FC14E7CF-B2FE-4152-9207-9C38A2F35EC6}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lesson-exec", "lesson-exec\lesson-exec.csproj", "{60071A51-83E2-45A3-A69C-5EF102E51149}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-solution", "example-solution\example-solution.csproj", "{67E0DB44-7794-4EB0-B284-E7660E2CFB21}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-01-simple", "examples\csharp\01-simple\01-simple.csproj", "{592F811F-4736-4DB1-9E0B-67BA6FAEE253}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-custom-server", "example-custom-server\example-custom-server.csproj", "{B6B14C70-1EC2-4E55-97E9-90788AAF785A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-02-feedback", "examples\csharp\02-feedback\02-feedback.csproj", "{43090959-2CCA-419D-88CE-CA7991C4A507}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-03-multiple-agents", "examples\csharp\03-multiple-agents\03-multiple-agents.csproj", "{0A607141-BF08-4D25-AF1A-3E10F135AB94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-04-async", "examples\csharp\04-async\04-async.csproj", "{6FAFDD8E-3236-49C0-B5A7-4CC9F73073BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-05-async-multiple-agents", "examples\csharp\05-async-multiple-agents\05-async-multiple-agents.csproj", "{FC14E7CF-B2FE-4152-9207-9C38A2F35EC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-06-solution", "examples\csharp\06-example-solution\06-example-solution.csproj", "{67E0DB44-7794-4EB0-B284-E7660E2CFB21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example-07-custom-server", "examples\csharp\07-custom-server\07-custom-server.csproj", "{B6B14C70-1EC2-4E55-97E9-90788AAF785A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
