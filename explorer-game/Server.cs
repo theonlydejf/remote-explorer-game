@@ -262,18 +262,21 @@ public class ConnectionHandler
     {
         string clientId = args.Value<string>("clientId")!;
         JObject? vsid = args.Value<JObject>("vsid");
-        if (vsid == null)
-            throw new NotImplementedException("Connections without VSID not yet supported");
-        string identifier = vsid.Value<string>("identifierStr")!;
-        identifier = Regex.Replace(identifier, @"\s+", " ");
-        identifier = Regex.Replace(identifier, @"\p{C}", "");
+        if (visualizer != null && vsid == null)
+            return (new JObject { ["success"] = false, ["message"] = "This server requieres VSID to connect. None present." }, null);
 
-        ConsoleColor color = Enum.Parse<ConsoleColor>(vsid.Value<string>("color")!);
+        ConsoleColor? color = vsid == null ? null : Enum.Parse<ConsoleColor>(vsid.Value<string>("color")!);
+        string? identifier = vsid?.Value<string>("identifierStr")!;
+        if (vsid != null)
+        {
+            identifier = Regex.Replace(identifier, @"\s+", " ");
+            identifier = Regex.Replace(identifier, @"\p{C}", "");
+        }
 
         lock (sync)
         {
             // Prevent identical identifier/color collisions across sessions.
-            if (sessionsById.Values.Any(id => id.SessionIdentifier.IdentifierStr == identifier && id.SessionIdentifier.Color == color))
+            if (vsid != null && sessionsById.Values.Any(id => id.SessionIdentifier.IdentifierStr == identifier && id.SessionIdentifier.Color == color))
                 return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))
@@ -286,15 +289,20 @@ public class ConnectionHandler
             var session = new LocalGameSession(map);
             session.AgentDied += AgentDied;
 
-            string sessionId = Guid.NewGuid().ToString();
-            var sid = new VisualSessionIdentifier(identifier, color, map);
+            string uuid = Guid.NewGuid().ToString();
+            SessionIdentifier sid = new SessionIdentifier
+            (
+                vsid == null ? null : new VisualSessionIdentifier(identifier, color!.Value, map),
+                uuid
+            );
 
-            sessionsById[sessionId] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
-            clientSessions[clientId].Add(sessionId);
+            sessionsById[uuid] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
+            clientSessions[clientId].Add(uuid);
 
-            visualizer?.AttachGameSession(session, sid);
+            if(visualizer != null)
+                visualizer.AttachGameSession(session, sid.VSID!);
 
-            return (new JObject { ["success"] = true, ["sid"] = sessionId }, sessionId);
+            return (new JObject { ["success"] = true, ["sid"] = uuid }, uuid);
         }
     }
 
