@@ -14,7 +14,7 @@ using ExplorerGame.ConsoleVisualizer;
 /// </summary>
 public class RemoteGameSession : IGameSession
 {
-    private readonly string sid;
+    private readonly string sessionId;
     private readonly string serverUrl;
     private readonly HttpClient httpClient = new();
 
@@ -27,11 +27,11 @@ public class RemoteGameSession : IGameSession
     /// Creates a new remote game session associated with a server and session ID.
     /// </summary>
     /// <param name="serverUrl">Base URL of the server.</param>
-    /// <param name="sid">Unique session identifier assigned by the server.</param>
-    public RemoteGameSession(string serverUrl, string sid)
+    /// <param name="sessionId">Unique session identifier assigned by the server.</param>
+    public RemoteGameSession(string serverUrl, string sessionId)
     {
         this.serverUrl = serverUrl.TrimEnd('/');
-        this.sid = sid;
+        this.sessionId = sessionId;
     }
 
     /// <inheritdoc/>
@@ -55,11 +55,11 @@ public class RemoteGameSession : IGameSession
     /// <returns>The movement result as reported by the server.</returns>
     public MovementResult Move(Vector move)
     {
-        JObject request = new JObject()
+        var request = new
         {
-            ["sid"] = sid,
-            ["dx"] = move.X,
-            ["dy"] = move.Y
+            sessionId,
+            dx = move.X,
+            dy = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -79,11 +79,11 @@ public class RemoteGameSession : IGameSession
     /// </returns>
     public AsyncMovementResult MoveAsync(Vector move)
     {
-        JObject request = new JObject()
+        var request = new
         {
-            ["sid"] = sid,
-            ["dx"] = move.X,
-            ["dy"] = move.Y
+            sessionId,
+            dx = move.X,
+            dy = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -156,16 +156,12 @@ public class RemoteGameSessionFactory
     /// <exception cref="Exception">
     /// Thrown if the server rejects the connection or returns invalid data.
     /// </exception>
-    public RemoteGameSession Create(SessionIdentifier? identifier)
+    public RemoteGameSession Create(SessionIdentifier identifier)
     {
-        JObject? vsid = identifier == null ? null : new JObject
+        JObject request = new JObject()
         {
-            ["identifierStr"] = identifier.IdentifierStr,
+            ["identifier"] = identifier.Identifier,
             ["color"] = identifier.Color.ToString(),
-        };
-        JObject request = new JObject
-        {
-            ["vsid"] = vsid,
             ["username"] = username
         };
 
@@ -177,7 +173,7 @@ public class RemoteGameSessionFactory
         if (!obj.Value<bool>("success"))
             throw new Exception(obj["message"]?.ToString() ?? "Unknown error");
 
-        var uuid = obj.Value<string>("sid") ?? throw new Exception("Invalid response from server");
+        var uuid = obj.Value<string>("uuid") ?? throw new Exception("Invalid response from server");
         return new RemoteGameSession(serverUrl, uuid);
     }
 }

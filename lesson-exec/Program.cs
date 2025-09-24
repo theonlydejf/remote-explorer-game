@@ -119,15 +119,10 @@ class SessionConnectedLogger
                 return;
             }
 
-            
-            logger.Write("Connected ", ConsoleColor.White);
-            if (e.SessionIdentifier != null && e.SessionIdentifier.HasVSID)
-            {
-                logger.Write("with '", ConsoleColor.White);
-                logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
-                logger.Write("' ", ConsoleColor.White);
-            }
-            logger.Write("into '", ConsoleColor.White);
+            logger.Write("Connected with '", ConsoleColor.White);
+            if (e.SessionIdentifier != null)
+                logger.Write(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
+            logger.Write("' into '", ConsoleColor.White);
             logger.Write(world, worldColor);
             logger.WriteLine($"'", ConsoleColor.White);
 
