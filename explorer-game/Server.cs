@@ -108,6 +108,9 @@ public class ConnectionHandler
 
         while (!token.IsCancellationRequested)
         {
+            Random rnd = new Random();
+            int maxWhaitTimeASync = 10;
+            int minWhaitTimeASync = 0;
             var context = await listener.GetContextAsync();
             if (context.Request.HttpMethod != "POST")
             {
@@ -123,7 +126,7 @@ public class ConnectionHandler
 
                 // Read body with a short timeout to avoid hanging connections.
                 using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(rnd.Next(minWhaitTimeASync,maxWhaitTimeASync)));
                 string body = await reader.ReadToEndAsync(cts.Token).WaitAsync(cts.Token);
 
                 var args = JObject.Parse(body);
