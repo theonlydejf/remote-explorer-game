@@ -26,7 +26,7 @@ public class SessionConnectedEventArgs : EventArgs
     public string ClientID { get; set; }
 
     /// <summary>
-    /// Identifier used to render this session
+    /// Identifier used for this session
     /// </summary>
     public SessionIdentifier? SessionIdentifier { get; set; }
 
@@ -284,7 +284,7 @@ public class ConnectionHandler
             session.AgentDied += AgentDied;
 
             string sessionId = Guid.NewGuid().ToString();
-            var sid = new SessionIdentifier(identifier, color, map);
+            var sid = new VisualSessionIdentifier(identifier, color, map);
 
             sessionsById[sessionId] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
             clientSessions[clientId].Add(sessionId);
