@@ -120,10 +120,10 @@ class SessionConnectedLogger
             }
 
             
-            logger.Write("Connected", ConsoleColor.White);
+            logger.Write("Connected ", ConsoleColor.White);
             if (e.SessionIdentifier != null && e.SessionIdentifier.HasVSID)
             {
-                logger.Write(" with '", ConsoleColor.White);
+                logger.Write("with '", ConsoleColor.White);
                 logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
                 logger.Write("' ", ConsoleColor.White);
             }

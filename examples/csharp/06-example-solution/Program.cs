@@ -145,10 +145,12 @@ static class Config
     [CLIConfigCheckBounds(1, double.PositiveInfinity)]
     public static uint MAP_GROW_SIZE_2D = 3;
 
-    [CLIHelp("Prefix used in agent's SID.")]
-    public static char AGENT_SID_PREFIX = '[';
-    [CLIHelp("Color used in agent's SID.")]
-    public static ConsoleColor AGENT_SID_COLOR = ConsoleColor.Blue;
+    [CLIHelp("Should the agents use VSIDs?")]
+    public static bool AGENT_USE_VSID = true;
+    [CLIHelp("Prefix used in agent's VSID.")]
+    public static char AGENT_VSID_PREFIX = '[';
+    [CLIHelp("Color used in agent's VSID.")]
+    public static ConsoleColor AGENT_VSID_COLOR = ConsoleColor.Blue;
     [CLIHelp("Total number of agents.")]
     public static uint AGENT_CNT = 5;
     [CLIHelp("Number of the total agents should have jumping enabled.")]
@@ -318,7 +320,14 @@ class Program
         Agent[] agents = new Agent[Config.AGENT_CNT];
         for (int i = 0; i < agents.Length; i++)
         {
-            agents[i] = new Agent(factory, new SessionIdentifier(Config.AGENT_SID_PREFIX.ToString() + i, Config.AGENT_SID_COLOR), map, i < Config.AGENT_JUMPER_CNT);
+            SessionIdentifier? sid = null;
+            if (Config.AGENT_USE_VSID)
+            {
+                // Supports up to 64 agents
+                /* 🐷 */ string postfix = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz?!"[i % 64].ToString();
+                sid = new SessionIdentifier(Config.AGENT_VSID_PREFIX.ToString() + postfix, Config.AGENT_VSID_COLOR);
+            }
+            agents[i] = new Agent(factory, sid, map, i < Config.AGENT_JUMPER_CNT);
             agents[i].Step();
         }
 
@@ -413,7 +422,7 @@ class Agent
     /// <summary>
     /// Assigned SID of this agent
     /// </summary>
-    public SessionIdentifier Identifier { get; }
+    public SessionIdentifier? Identifier { get; }
     
     /// <summary>
     /// Reference to a Map, which the agent is trying to discover
@@ -466,7 +475,7 @@ class Agent
     /// <param name="identifier"></param>
     /// <param name="map"></param>
     /// <param name="allowJumps"></param>
-    public Agent(RemoteGameSessionFactory factory, SessionIdentifier identifier, Map map, bool allowJumps = true)
+    public Agent(RemoteGameSessionFactory factory, SessionIdentifier? identifier, Map map, bool allowJumps = true)
     {
         this.factory = factory;
         Identifier = identifier;
