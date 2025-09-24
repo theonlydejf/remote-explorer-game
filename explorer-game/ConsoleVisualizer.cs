@@ -19,7 +19,7 @@ public class ConsoleVisualizer
     /// <summary>
     /// Maps each game session to its identifier for display (color + symbol).
     /// </summary>
-    private Dictionary<LocalGameSession, SessionIdentifier> gameSessions = new();
+    private Dictionary<LocalGameSession, VisualSessionIdentifier> gameSessions = new();
 
     /// <summary>
     /// Top-left coordinate of the visualization window in the console.
@@ -62,13 +62,13 @@ public class ConsoleVisualizer
     /// <summary>
     /// Convenience overload for attaching a game session at the default agent location (0,0).
     /// </summary>
-    public bool AttachGameSession(LocalGameSession gameSession, SessionIdentifier identifier) =>
+    public bool AttachGameSession(LocalGameSession gameSession, VisualSessionIdentifier identifier) =>
         AttachGameSession(gameSession, identifier, Vector.Zero);
 
     /// <summary>
     /// Attaches a game session with its display identifier, tracking the agent's location.
     /// </summary>
-    public bool AttachGameSession(LocalGameSession gameSession, SessionIdentifier identifier, Vector agentLocation)
+    public bool AttachGameSession(LocalGameSession gameSession, VisualSessionIdentifier identifier, Vector agentLocation)
     {
         // A visualizer is designed for exactly one map layout.
         if (map != null && !map.Equals(gameSession.map))
@@ -182,7 +182,7 @@ public class ConsoleVisualizer
 
         // Count how many agents occupy this tile.
         int agentCnt = 0;
-        SessionIdentifier id = SessionIdentifier.ERROR_IDENTIFIER;
+        VisualSessionIdentifier id = VisualSessionIdentifier.ERROR_IDENTIFIER;
         foreach (var keyVal in gameSessions)
         {
             if (keyVal.Key.AgentLocation == loc)
@@ -199,7 +199,7 @@ public class ConsoleVisualizer
             if (agentCnt > 1)
             {
                 // Multiple agents in one tile -> display their count instead of identifiers.
-                Console.ForegroundColor = SessionIdentifier.SESSION_COUNTER_COLOR;
+                Console.ForegroundColor = VisualSessionIdentifier.SESSION_COUNTER_COLOR;
 
                 // If absurdly many agents, fallback to "Hi" as a placeholder.
                 if (agentCnt > 99)
@@ -213,7 +213,7 @@ public class ConsoleVisualizer
             {
                 // One agent -> show its identifier in its assigned color.
                 Console.ForegroundColor = id.Color;
-                Console.Write(id.Identifier);
+                Console.Write(id.IdentifierStr);
                 return;
             }
 
