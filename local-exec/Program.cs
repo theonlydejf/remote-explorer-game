@@ -118,7 +118,7 @@ void LogSessionConnected(object? sender, SessionConnectedEventArgs e)
 
     logger.Write("Connected with '");
     if (e.SessionIdentifier != null)
-        logger.Write(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
+        logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
     logger.WriteLine("'");
 
     if (e.GameSession == null)

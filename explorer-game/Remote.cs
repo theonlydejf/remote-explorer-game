@@ -160,7 +160,7 @@ public class RemoteGameSessionFactory
     {
         JObject request = new JObject()
         {
-            ["identifier"] = identifier.Identifier,
+            ["identifier"] = identifier.IdentifierStr,
             ["color"] = identifier.Color.ToString(),
             ["username"] = username
         };

@@ -270,7 +270,7 @@ public class ConnectionHandler
         lock (sync)
         {
             // Prevent identical identifier/color collisions across sessions.
-            if (sessionsById.Values.Any(id => id.SessionIdentifier.Identifier == identifier && id.SessionIdentifier.Color == color))
+            if (sessionsById.Values.Any(id => id.SessionIdentifier.IdentifierStr == identifier && id.SessionIdentifier.Color == color))
                 return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))

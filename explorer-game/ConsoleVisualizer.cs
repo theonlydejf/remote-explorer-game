@@ -182,15 +182,17 @@ public class ConsoleVisualizer
 
         // Count how many agents occupy this tile.
         int agentCnt = 0;
-        SessionIdentifier id = SessionIdentifier.ERROR_IDENTIFIER;
+        SessionIdentifier id = VisualSessionIdentifier.ERROR_IDENTIFIER;
+        if (!id.HasVSID)
+            throw new InvalidOperationException("SID without VSID provided for ConsoleVisualizer");
         foreach (var keyVal in gameSessions)
-        {
-            if (keyVal.Key.AgentLocation == loc)
             {
-                agentCnt++;
-                id = keyVal.Value;
+                if (keyVal.Key.AgentLocation == loc)
+                {
+                    agentCnt++;
+                    id = keyVal.Value;
+                }
             }
-        }
 
         lock (consoleLock)
         {
@@ -199,7 +201,7 @@ public class ConsoleVisualizer
             if (agentCnt > 1)
             {
                 // Multiple agents in one tile -> display their count instead of identifiers.
-                Console.ForegroundColor = SessionIdentifier.SESSION_COUNTER_COLOR;
+                Console.ForegroundColor = VisualSessionIdentifier.SESSION_COUNTER_COLOR;
 
                 // If absurdly many agents, fallback to "Hi" as a placeholder.
                 if (agentCnt > 99)
@@ -212,8 +214,8 @@ public class ConsoleVisualizer
             if (agentCnt == 1)
             {
                 // One agent -> show its identifier in its assigned color.
-                Console.ForegroundColor = id.Color;
-                Console.Write(id.Identifier);
+                Console.ForegroundColor = id.Color.Value;
+                Console.Write(id.IdentifierStr);
                 return;
             }
 

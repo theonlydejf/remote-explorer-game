@@ -164,66 +164,127 @@ public struct MovementResult
     }
 }
 
+public class SessionIdentifier
+{
+    public string? SID { get; set; }
+
+    public VisualSessionIdentifier? VSID { get; set; }
+
+    public bool ConnectionReady => SID != null;
+    public bool HasVSID => VSID != null;
+
+    /// <summary>
+    /// Console color associated with this identifier.
+    /// </summary>
+    public ConsoleColor? Color
+    {
+        get => VSID?.Color;
+        set
+        {
+            if (value == null)
+                throw new ArgumentNullException("Property of VSID cannot be set to null");
+            if (VSID == null)
+                throw new ArgumentException("No VSID is associated with this SID instance");
+            VSID.Color = value.Value;
+        }
+    }
+
+    /// <summary>
+    /// Two-character identifier string.
+    /// </summary>
+    public string? IdentifierStr
+    {
+        get => VSID?.IdentifierStr;
+        set
+        {
+            if (value == null)
+                throw new ArgumentNullException("Property of VSID cannot be set to null");
+            if (VSID == null)
+                throw new ArgumentException("No VSID is associated with this SID instance");
+            VSID.IdentifierStr = value;
+        }
+    }
+
+    public SessionIdentifier(string identifier, ConsoleColor color = ConsoleColor.White, Tile?[,]? map = null)
+        : this(new VisualSessionIdentifier(identifier, color, map)) { }
+
+    public SessionIdentifier(VisualSessionIdentifier? vsid = null, string? sid = null)
+    {
+        VSID = vsid;
+        SID = sid;
+    }
+
+    public static implicit operator SessionIdentifier(VisualSessionIdentifier vsid)
+        => new SessionIdentifier(vsid);
+}
+
 /// <summary>
 /// Represents an identifier for a session, including a text symbol
 /// and a console color. Ensures that identifiers are unique and not reserved.
 /// </summary>
-public class SessionIdentifier
+public class VisualSessionIdentifier
 {
     /// <summary>
     /// Special identifier used to indicate an error.
     /// </summary>
-    public static readonly SessionIdentifier ERROR_IDENTIFIER = new() { Identifier = "EE", Color = ConsoleColor.Red};
+    public static readonly VisualSessionIdentifier ERROR_IDENTIFIER = new() { identifierStr = "EE", color = ConsoleColor.Red };
 
     /// <summary>
     /// Color used when displaying the number of multiple agents on a tile.
     /// </summary>
     public const ConsoleColor SESSION_COUNTER_COLOR = ConsoleColor.Yellow;
 
-    private static (Regex, ConsoleColor)[]? __RESERVED_IDENTIFIERS;
-
+    private static (Regex, ConsoleColor)[]? __reserved_identifiers;
     /// <summary>
     /// Reserved identifiers and their associated colors.
     /// Prevents conflicts with internal symbols like error markers
     /// or session counters.
     /// </summary>
-    private static (Regex, ConsoleColor)[] RESERVED_IDENTIFIERS 
-    { 
-        get 
+    private static (Regex, ConsoleColor)[] RESERVED_IDENTIFIERS
+    {
+        get
         {
-            if(__RESERVED_IDENTIFIERS == null)
+            if (__reserved_identifiers == null)
             {
-                __RESERVED_IDENTIFIERS = new (Regex, ConsoleColor)[2]
+                __reserved_identifiers = new (Regex, ConsoleColor)[]
                 {
-                    (new Regex(ERROR_IDENTIFIER.Identifier), ERROR_IDENTIFIER.Color),
+                    (new Regex(ERROR_IDENTIFIER.IdentifierStr), ERROR_IDENTIFIER.Color),
                     (new Regex(@"\d+|Hi"), SESSION_COUNTER_COLOR)
                 };
             }
-            return __RESERVED_IDENTIFIERS;
+            return __reserved_identifiers;
         }
     }
+
+    public static readonly HashSet<ConsoleColor> INVALID_COLORS = new () { Console.BackgroundColor };
 
     /// <summary>
     /// Determines if a session identifier is reserved.
     /// Checks against internal reserved patterns and map tile strings.
     /// </summary>
-    public static bool IsReserved(SessionIdentifier identifier, Tile?[,]? map = null)
+    public static bool IsReserved(string identifierStr, ConsoleColor color, Tile?[,]? map = null)
     {
         // If map is provided, prevent identifiers that collide with tile strings.
-        if(map != null && identifier.Color == ConsoleColor.White)
+        if (map != null && color == ConsoleColor.White)
         {
-            foreach(Tile? tile in map)
+            foreach (Tile? tile in map)
             {
-                if(tile.ToString() == identifier.Identifier)
-                    return true;
+                if (!tile.HasValue)
+                {
+                    if (identifierStr == "  ")
+                        return true;
+                    continue;
+                }
+                if (tile.ToString() == identifierStr)
+                        return true;
             }
         }
 
         // Check regex-based reserved identifiers.
-        foreach(var idSpec in RESERVED_IDENTIFIERS)
+        foreach (var idSpec in RESERVED_IDENTIFIERS)
         {
-            if(idSpec.Item2 == identifier.Color &&
-                idSpec.Item1.IsMatch(identifier.Identifier))
+            if (idSpec.Item2 == color &&
+                idSpec.Item1.IsMatch(identifierStr))
                 return true;
         }
 
@@ -231,22 +292,66 @@ public class SessionIdentifier
     }
 
     /// <summary>
+    /// Determines if a session identifier is reserved.
+    /// Checks against internal reserved patterns and map tile strings.
+    /// </summary>
+    public static bool IsReserved(VisualSessionIdentifier identifier, Tile?[,]? map = null)
+        => IsReserved(identifier.IdentifierStr, identifier.Color, map);
+
+    private static bool IsIdentifierStringValid(string identifier)
+    {
+        return identifier.Length <= 2;
+    }
+
+    private static bool IsIdentifierColorValid(ConsoleColor color)
+    {
+        return !INVALID_COLORS.Contains(color);
+    }
+
+    private Tile?[,]? map;
+
+    private ConsoleColor color;
+    /// <summary>
     /// Console color associated with this identifier.
     /// </summary>
-    public ConsoleColor Color { get; set; }
+    public ConsoleColor Color
+    {
+        get => color;
+        set
+        {
+            if (!IsIdentifierColorValid(value))
+                throw new ArgumentException("Invalid identifier color");
+            if (IsReserved(IdentifierStr, value, map))
+                throw new ArgumentException("This identifier is reserved");
 
+            color = value;
+        }
+    }
+
+    private string identifierStr = "??";
     /// <summary>
     /// Two-character identifier string.
     /// </summary>
-    public string Identifier { get; set; }
+    public string IdentifierStr
+    {
+        get => identifierStr;
+        set
+        {
+            if (!IsIdentifierStringValid(value))
+                throw new ArgumentException("Identifier string can be 2 bytes at most");
+            if (IsReserved(value, Color, map))
+                throw new ArgumentException("This identifier is reserved");
+            identifierStr = value;
+        }
+    }
 
     /// <summary>
     /// Internal constructor used for error and reserved identifiers.
     /// </summary>
-    internal SessionIdentifier()
+    internal VisualSessionIdentifier()
     {
-        Identifier = "??";
-        Color = ConsoleColor.White;
+        identifierStr = "??";
+        color = ConsoleColor.White;
     }
 
     /// <summary>
@@ -254,23 +359,14 @@ public class SessionIdentifier
     /// </summary>
     /// <param name="identifier">Two-character identifier string.</param>
     /// <param name="color">Console color for the identifier.</param>
-    /// <param name="map">
-    /// Optional map for tile collision checks.
-    /// The map won't be associated with this identifier.
-    /// </param>
+    /// <param name="map"> /// Optional map for tile collision checks.  /// </param>
     /// <exception cref="ArgumentException">
     /// Thrown if identifier is too long, uses black color, or is reserved.
     /// </exception>
-    public SessionIdentifier(string identifier, ConsoleColor color = ConsoleColor.White, Tile?[,]? map = null)
+    public VisualSessionIdentifier(string identifierStr, ConsoleColor color = ConsoleColor.White, Tile?[,]? map = null)
     {
-        Identifier = identifier;
+        this.map = map;
+        IdentifierStr = identifierStr;
         Color = color;
-
-        if(identifier.Length > 2)
-            throw new ArgumentException("Identifier can be 2 bytes at most");
-        if(color == ConsoleColor.Black)
-            throw new ArgumentException("Invalid identifier color");
-        if(IsReserved(this, map))
-            throw new ArgumentException("This identifier is reserved");
     }
 }

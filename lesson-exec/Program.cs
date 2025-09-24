@@ -121,7 +121,7 @@ class SessionConnectedLogger
 
             logger.Write("Connected with '", ConsoleColor.White);
             if (e.SessionIdentifier != null)
-                logger.Write(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
+                logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
             logger.Write("' into '", ConsoleColor.White);
             logger.Write(world, worldColor);
             logger.WriteLine($"'", ConsoleColor.White);

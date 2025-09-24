@@ -54,7 +54,7 @@ class Program
                 logger.Write(e.ClientUsername, ConsoleColor.Yellow);
                 logger.Write("] connected with ID ", ConsoleColor.White);
                 if (e.SessionIdentifier != null)
-                    logger.WriteLine(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
+                    logger.WriteLine(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
                 else
                     logger.WriteLine("(unknown ID)", ConsoleColor.Red);
             }
