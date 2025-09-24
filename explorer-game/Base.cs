@@ -114,10 +114,20 @@ public class LocalGameSession : IGameSession
     /// Creates a new game session on the specified map.
     /// </summary>
     /// <param name="map">The map on which the agent will operate.</param>
+    /// 
     public LocalGameSession(Tile?[,] map) // TODO: make it possible to specify starting location
     {
         this.map = map;
         isAgentAlive = true;
+    }
+    /// <summary>
+    /// Sets the agent's location
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    public void ChangeAgentLocation(int x, int y)
+    {
+        AgentLocation = new Vector(x, y);
     }
 
     /// <summary>
