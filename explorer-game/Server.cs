@@ -261,11 +261,14 @@ public class ConnectionHandler
     private (JObject, string? sessionId) HandleConnect(JObject args)
     {
         string clientId = args.Value<string>("clientId")!;
-        string identifier = args.Value<string>("identifier")!;
+        JObject? vsid = args.Value<JObject>("vsid");
+        if (vsid == null)
+            throw new NotImplementedException("Connections without VSID not yet supported");
+        string identifier = vsid.Value<string>("identifierStr")!;
         identifier = Regex.Replace(identifier, @"\s+", " ");
         identifier = Regex.Replace(identifier, @"\p{C}", "");
 
-        ConsoleColor color = Enum.Parse<ConsoleColor>(args.Value<string>("color")!);
+        ConsoleColor color = Enum.Parse<ConsoleColor>(vsid.Value<string>("color")!);
 
         lock (sync)
         {

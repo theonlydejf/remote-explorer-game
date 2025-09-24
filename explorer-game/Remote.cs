@@ -14,7 +14,7 @@ using ExplorerGame.ConsoleVisualizer;
 /// </summary>
 public class RemoteGameSession : IGameSession
 {
-    private readonly string sessionId;
+    private readonly string sid;
     private readonly string serverUrl;
     private readonly HttpClient httpClient = new();
 
@@ -27,11 +27,11 @@ public class RemoteGameSession : IGameSession
     /// Creates a new remote game session associated with a server and session ID.
     /// </summary>
     /// <param name="serverUrl">Base URL of the server.</param>
-    /// <param name="sessionId">Unique session identifier assigned by the server.</param>
-    public RemoteGameSession(string serverUrl, string sessionId)
+    /// <param name="sid">Unique session identifier assigned by the server.</param>
+    public RemoteGameSession(string serverUrl, string sid)
     {
         this.serverUrl = serverUrl.TrimEnd('/');
-        this.sessionId = sessionId;
+        this.sid = sid;
     }
 
     /// <inheritdoc/>
@@ -57,7 +57,7 @@ public class RemoteGameSession : IGameSession
     {
         var request = new
         {
-            sid = sessionId,
+            sid,
             dx = move.X,
             dy = move.Y
         };
@@ -81,7 +81,7 @@ public class RemoteGameSession : IGameSession
     {
         var request = new
         {
-            sid = sessionId,
+            sid,
             dx = move.X,
             dy = move.Y
         };
@@ -158,10 +158,13 @@ public class RemoteGameSessionFactory
     /// </exception>
     public RemoteGameSession Create(SessionIdentifier identifier)
     {
-        JObject request = new JObject()
+        JObject request = new JObject
         {
-            ["identifier"] = identifier.IdentifierStr,
-            ["color"] = identifier.Color.ToString(),
+            ["vsid"] = new JObject
+            {
+                ["identifierStr"] = identifier.IdentifierStr,
+                ["color"] = identifier.Color.ToString(),
+            },
             ["username"] = username
         };
 
