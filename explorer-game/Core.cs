@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace ExplorerGame.Core;
@@ -183,12 +184,15 @@ public class SessionIdentifier
     /// <summary>
     /// True when <see cref="SID"/> is present.
     /// </summary>
-    public bool ConnectionReady => SID != null;
+    public bool ConnectionReady => SID is not null;
 
     /// <summary>
     /// True when <see cref="VSID"/> is present.
     /// </summary>
-    public bool HasVSID => VSID != null;
+    [MemberNotNullWhen(true, nameof(VSID))]
+    [MemberNotNullWhen(true, nameof(IdentifierStr))]
+    [MemberNotNullWhen(true, nameof(Color))]
+    public bool HasVSID => VSID is not null;
 
     /// <summary>
     /// Console color associated with the visual identifier. Proxies to <see cref="VisualSessionIdentifier.Color"/>.
