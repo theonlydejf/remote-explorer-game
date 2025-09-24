@@ -55,11 +55,11 @@ public class RemoteGameSession : IGameSession
     /// <returns>The movement result as reported by the server.</returns>
     public MovementResult Move(Vector move)
     {
-        var request = new
+        JObject request = new JObject()
         {
-            sid,
-            dx = move.X,
-            dy = move.Y
+            ["sid"] = sid,
+            ["dx"] = move.X,
+            ["dy"] = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -79,11 +79,11 @@ public class RemoteGameSession : IGameSession
     /// </returns>
     public AsyncMovementResult MoveAsync(Vector move)
     {
-        var request = new
+        JObject request = new JObject()
         {
-            sid,
-            dx = move.X,
-            dy = move.Y
+            ["sid"] = sid,
+            ["dx"] = move.X,
+            ["dy"] = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -156,15 +156,16 @@ public class RemoteGameSessionFactory
     /// <exception cref="Exception">
     /// Thrown if the server rejects the connection or returns invalid data.
     /// </exception>
-    public RemoteGameSession Create(SessionIdentifier identifier)
+    public RemoteGameSession Create(SessionIdentifier? identifier)
     {
+        JObject? vsid = identifier == null ? null : new JObject
+        {
+            ["identifierStr"] = identifier.IdentifierStr,
+            ["color"] = identifier.Color.ToString(),
+        };
         JObject request = new JObject
         {
-            ["vsid"] = new JObject
-            {
-                ["identifierStr"] = identifier.IdentifierStr,
-                ["color"] = identifier.Color.ToString(),
-            },
+            ["vsid"] = vsid,
             ["username"] = username
         };
 
