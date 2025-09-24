@@ -26,7 +26,7 @@ public static class GameFactory
         using var image = Image.Load<Rgba32>(imgPath);
         int width = image.Width;
         int height = image.Height;
-        Tile?[,] result = new Tile?[width, height];
+        Tile?[,] result = new Tile?[height, width];
 
         for (int y = 0; y < height; y++)
         {
@@ -39,11 +39,11 @@ public static class GameFactory
 
                 // Bright pixels -> tile ("##")
                 if (brightness > .5)
-                    result[x, y] = "##";
+                    result[y, x] = "##";
             }
         }
 
-        return result;
+        return TransposeMap(result);
     }
 
     /// <summary>
