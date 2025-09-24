@@ -130,13 +130,13 @@ public class ConnectionHandler
                 args["clientId"] = clientID;
 
                 // If sessionId is missing or unknown, route to HandleCommand directly.
-                if (!args.ContainsKey("sessionId"))
+                if (!args.ContainsKey("sid"))
                 {
                     await SendResponse(HandleCommand(args, context), context);
                 }
                 else
                 {
-                    string? sessionId = args.Value<string>("sessionId");
+                    string? sessionId = args.Value<string>("sid");
                     if (sessionId == null || !sessionsById.TryGetValue(sessionId, out SessionWrapper? session) || session == null)
                     {
                         await SendResponse(HandleCommand(args, context), context);
@@ -225,7 +225,7 @@ public class ConnectionHandler
 
                 SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
-                    session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("Missing uuid in response")];
+                    session = sessionsById[response.Value<string>("sid") ?? throw new Exception("Missing 'sid' in response")];
 
                 string username = args.Value<string>("username")?.Trim() ?? "unknown";
                 username = Regex.Replace(username, @"\s+", " ");   // collapse whitespace
@@ -291,7 +291,7 @@ public class ConnectionHandler
 
             visualizer?.AttachGameSession(session, sid);
 
-            return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sessionId);
+            return (new JObject { ["success"] = true, ["sid"] = sessionId }, sessionId);
         }
     }
 
@@ -324,14 +324,14 @@ public class ConnectionHandler
     /// </summary>
     private (JObject, string? sessionId) HandleMove(JObject request)
     {
-        string sessionId = request.Value<string>("sessionId")!;
+        string sessionId = request.Value<string>("sid")!;
         int dx = request.Value<int>("dx");
         int dy = request.Value<int>("dy");
 
         lock (sync)
         {
             if (!sessionsById.TryGetValue(sessionId, out var session))
-                return (new JObject { ["success"] = false, ["message"] = "Unknown sessionId" }, null);
+                return (new JObject { ["success"] = false, ["message"] = "No living agent with requested session ID" }, null);
 
             var result = session.Session.Move(new Vector(dx, dy));
             if (result.IsAgentAlive && result.MovedSuccessfully)

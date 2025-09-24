@@ -57,7 +57,7 @@ public class RemoteGameSession : IGameSession
     {
         var request = new
         {
-            sessionId,
+            sid = sessionId,
             dx = move.X,
             dy = move.Y
         };
@@ -81,7 +81,7 @@ public class RemoteGameSession : IGameSession
     {
         var request = new
         {
-            sessionId,
+            sid = sessionId,
             dx = move.X,
             dy = move.Y
         };
@@ -173,7 +173,7 @@ public class RemoteGameSessionFactory
         if (!obj.Value<bool>("success"))
             throw new Exception(obj["message"]?.ToString() ?? "Unknown error");
 
-        var uuid = obj.Value<string>("uuid") ?? throw new Exception("Invalid response from server");
+        var uuid = obj.Value<string>("sid") ?? throw new Exception("Invalid response from server");
         return new RemoteGameSession(serverUrl, uuid);
     }
 }
