@@ -122,6 +122,7 @@ public class AsyncMovementResult
     /// <summary>
     /// Indicates whether the result is ready.
     /// </summary>
+    [MemberNotNullWhen(true, nameof(MovementResult))]
     public bool Ready { get; internal set; }
 
     /// <summary>
