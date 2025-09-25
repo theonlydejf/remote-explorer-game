@@ -322,7 +322,7 @@ class Program
         RemoteGameSessionFactory factory = new RemoteGameSessionFactory($"http://{Config.SERVER_IP}:{Config.SERVER_PORT}/", Config.PLAYER_NAME);
 
         // Map with a starting size
-        Map map = new Map((int)Config.MAP_START_WIDTH, (int)Config.MAP_START_HEIGHT);
+        DiscoverableMap map = new DiscoverableMap((int)Config.MAP_START_WIDTH, (int)Config.MAP_START_HEIGHT);
 
         // Init agents
         Agent[] agents = new Agent[Config.AGENT_CNT];
@@ -435,7 +435,7 @@ class Agent
     /// <summary>
     /// Reference to a Map, which the agent is trying to discover
     /// </summary>
-    public Map Map { get; }
+    public DiscoverableMap Map { get; }
 
     /// <summary>
     /// AsyncMovementResult of the movement performed by last Step()
@@ -483,7 +483,7 @@ class Agent
     /// <param name="identifier"></param>
     /// <param name="map"></param>
     /// <param name="allowJumps"></param>
-    public Agent(RemoteGameSessionFactory factory, SessionIdentifier? identifier, Map map, bool allowJumps = true)
+    public Agent(RemoteGameSessionFactory factory, SessionIdentifier? identifier, DiscoverableMap map, bool allowJumps = true)
     {
         this.factory = factory;
         Identifier = identifier;
@@ -807,12 +807,12 @@ class Agent
 /// and efficient searching for undiscovered cells. Provides methods to grow the map,access
 /// cells, and select the closest or a random undiscovered cell for exploration.
 /// </summary>
-class Map
+class DiscoverableMap
 {
     private CellState[,] map;
 
     
-    public Map(int width, int height)
+    public DiscoverableMap(int width, int height)
     {
         map = new CellState[width, height];
         UndiscoveredCnt = width * height;
@@ -828,8 +828,8 @@ class Map
 
     public CellState this[Vector vec]
     {
-        get => this[vec.X, vec.Y];
-        set => this[vec.X, vec.Y] = value;
+        get => this[vec];
+        set => this[vec] = value;
     }
 
     public CellState this[int row, int col]

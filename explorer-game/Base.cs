@@ -74,7 +74,7 @@ public class LocalGameSession : IGameSession
     /// <summary>
     /// Reference to the map being explored.
     /// </summary>
-    internal Tile?[,] map;
+    internal Map map;
 
     private Vector agentLocation;
 
@@ -114,7 +114,7 @@ public class LocalGameSession : IGameSession
     /// Creates a new game session on the specified map.
     /// </summary>
     /// <param name="map">The map on which the agent will operate.</param>
-    public LocalGameSession(Tile?[,] map) // TODO: make it possible to specify starting location
+    public LocalGameSession(Map map) // TODO: make it possible to specify starting location
     {
         this.map = map;
         isAgentAlive = true;
@@ -132,15 +132,14 @@ public class LocalGameSession : IGameSession
         AgentLocation += delta;
 
         // Out of bounds check
-        if (AgentLocation.X < 0 || AgentLocation.X >= map.GetLength(0) ||
-            AgentLocation.Y < 0 || AgentLocation.Y >= map.GetLength(1))
+        if (!map.IsInBounds(AgentLocation))
         {
             Kill("Wandered out of the map");
         }
         // Hazard tile check
-        else if (map[AgentLocation.X, AgentLocation.Y].HasValue)
+        else if (!map.IsSafe(AgentLocation))
         {
-            DiscoveredTile = map[AgentLocation.X, AgentLocation.Y];
+            DiscoveredTile = map[AgentLocation];
             Kill("Stepped on a trap");
         }
 
