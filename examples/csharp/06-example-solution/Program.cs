@@ -249,7 +249,15 @@ static class Config
         {
             var helpAttr = field.GetCustomAttribute<CLIHelpAttribute>();
             string help = helpAttr != null ? helpAttr.HelpText : "";
-            Console.WriteLine($"  --{field.Name.ToLower().Replace("_", "-")}: {field.GetValue(null)} (type: {field.FieldType.Name}){(string.IsNullOrWhiteSpace(help) ? "" : " - " + help)}");
+            var boundsAttr = field.GetCustomAttribute<CLIConfigCheckBounds>();
+            string boundsInfo = boundsAttr == null ? "" : $" from <{boundsAttr.Min}, {boundsAttr.Max}>";
+
+            string optionName = $"--{field.Name.ToLower().Replace("_", "-")}";
+            string valueStr = $"(default: {field.GetValue(null)})";
+            string typeStr = $"{field.FieldType.Name}{boundsInfo}";
+            string helpStr = string.IsNullOrWhiteSpace(help) ? "" : help;
+
+            Console.WriteLine($"  {optionName + " " + valueStr,-45} {typeStr,-25}{helpStr}");
         }
     }
 }
