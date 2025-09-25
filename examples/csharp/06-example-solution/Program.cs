@@ -828,8 +828,8 @@ class DiscoverableMap
 
     public CellState this[Vector vec]
     {
-        get => this[vec];
-        set => this[vec] = value;
+        get => this[vec.X, vec.Y];
+        set => this[vec.X, vec.Y] = value;
     }
 
     public CellState this[int row, int col]
