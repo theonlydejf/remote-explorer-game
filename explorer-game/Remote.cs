@@ -44,7 +44,7 @@ public class RemoteGameSession : IGameSession
     /// Remote session does not expose discovered tiles directly.
     /// TODO implement
     /// </summary>
-    public Tile? DiscoveredTile => throw new NotImplementedException();
+    public Tile? DiscoveredTile { get; private set; } = null;
 
     /// <summary>
     /// Sends a synchronous move request to the server and processes the result.
@@ -116,14 +116,21 @@ public class RemoteGameSession : IGameSession
         else
             LastResponseMessage = null;
 
+        Tile? discoveredTile = null;
+        if (result.ContainsKey("discovered"))
+            discoveredTile = Tile.Deserialize(result.Value<JObject>("discovered"));
+
         if (!result.Value<bool>("success"))
         {
             IsAgentAlive = false;
-            return new MovementResult(false, IsAgentAlive);
+            return new MovementResult(false, IsAgentAlive, discoveredTile);
         }
 
-        IsAgentAlive = result.Value<bool>("alive");
-        return new MovementResult(result.Value<bool>("moved"), IsAgentAlive);
+        bool survived = result.Value<bool>("alive");
+        if (IsAgentAlive && !survived)
+            DiscoveredTile = discoveredTile;
+        IsAgentAlive = survived;
+        return new MovementResult(result.Value<bool>("moved"), IsAgentAlive, discoveredTile);
     }
 }
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 
 namespace ExplorerGame.Core;
 
@@ -97,7 +98,7 @@ public struct Tile
     /// </summary>
     public Tile(string str)
     {
-        if(str.Length != 2)
+        if (str.Length != 2)
             throw new ArgumentException("Tile can be constructed only from string of length 2");
 
         Left = str[0];
@@ -123,6 +124,23 @@ public struct Tile
 
     public static bool operator ==(Tile a, Tile b) => a.Left == b.Left && a.Right == b.Right;
     public static bool operator !=(Tile a, Tile b) => !(a == b);
+
+    public static JObject? Serialize(Tile? tile)
+    {
+        if (!tile.HasValue)
+            return null;
+        return new JObject()
+        {
+            ["str"] = tile.ToString()
+        };
+    }
+
+    public static Tile? Deserialize(JObject? jobj)
+    {
+        if (jobj == null)
+            return null;
+        return new Tile(jobj.Value<string>("str") ?? throw new ArgumentException("Missing str in JObject"));
+    }
 }
 
 /// <summary>
@@ -172,10 +190,13 @@ public struct MovementResult
     /// </summary>
     public bool IsAgentAlive { get; set; }
 
-    public MovementResult(bool movedSuccessfully, bool isAgentAlive)
+    public Tile? DiscoveredTile { get; set; }
+
+    public MovementResult(bool movedSuccessfully, bool isAgentAlive, Tile? discoveredTile)
     {
         MovedSuccessfully = movedSuccessfully;
         IsAgentAlive = isAgentAlive;
+        DiscoveredTile = discoveredTile;
     }
 }
 

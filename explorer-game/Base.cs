@@ -160,12 +160,13 @@ public class LocalGameSession : IGameSession
     public MovementResult Move(Vector move)
     {
         if (!IsAgentAlive)
-            return new MovementResult(false, false);
+            return new MovementResult(false, false, null);
 
         if (!VALID_MOVES.Contains(move))
-            return new MovementResult(false, true);
+            return new MovementResult(false, true, null);
 
-        return new MovementResult(true, Translate(move));
+        bool survivedMove = Translate(move);
+        return new MovementResult(true, survivedMove, map.IsInBounds(AgentLocation) ? map[AgentLocation] : null);
     }
 
     /// <summary>

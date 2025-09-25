@@ -344,7 +344,7 @@ public class ConnectionHandler
             if (!sessionsById.TryGetValue(sessionId, out var session))
                 return (new JObject { ["success"] = false, ["message"] = "No living agent with requested session ID" }, null);
 
-            var result = session.Session.Move(new Vector(dx, dy));
+            MovementResult result = session.Session.Move(new Vector(dx, dy));
             if (result.IsAgentAlive && result.MovedSuccessfully)
                 UpdateActivity(sessionId);
 
@@ -354,7 +354,8 @@ public class ConnectionHandler
                 {
                     ["success"] = true,
                     ["moved"] = result.MovedSuccessfully,
-                    ["alive"] = result.IsAgentAlive
+                    ["alive"] = result.IsAgentAlive,
+                    ["discovered"] = Tile.Serialize(result.DiscoveredTile)
                 },
                 sessionId
             );

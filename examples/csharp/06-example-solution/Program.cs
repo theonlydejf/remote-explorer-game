@@ -489,7 +489,7 @@ class Agent
         Identifier = identifier;
         Map = map;
         AllowJumps = allowJumps;
-        StepMovementResult = new AsyncMovementResult(true, new MovementResult(false, true), Task.CompletedTask);
+        StepMovementResult = new AsyncMovementResult(true, new MovementResult(false, true, null), Task.CompletedTask);
 
         lock (Sync)
         {
