@@ -2,11 +2,22 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": ".NET Core Launch (console)",
+        "name": "Debug lesson-exec (console)",
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build lesson-exec",
         "program": "${workspaceFolder}/lesson-exec/bin/Debug/net7.0/lesson-exec.dll",
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "stopAtEntry": false,
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Debug example-solution (console)",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build example-solution",
+        "program": "${workspaceFolder}/examples/csharp/06-example-solution/bin/Debug/net7.0/06-example-solution.dll",
         "args": [],
         "cwd": "${workspaceFolder}",
         "stopAtEntry": false,
