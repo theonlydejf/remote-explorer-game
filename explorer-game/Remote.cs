@@ -126,10 +126,8 @@ public class RemoteGameSession : IGameSession
             return new MovementResult(false, IsAgentAlive, discoveredTile);
         }
 
-        bool survived = result.Value<bool>("alive");
-        if (IsAgentAlive && !survived)
-            DiscoveredTile = discoveredTile;
-        IsAgentAlive = survived;
+        DiscoveredTile = discoveredTile;
+        IsAgentAlive = result.Value<bool>("alive");
         return new MovementResult(result.Value<bool>("moved"), IsAgentAlive, discoveredTile);
     }
 }
