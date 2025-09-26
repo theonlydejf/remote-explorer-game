@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, overload
 
 import httpx
 import numpy as np
 import asyncio
+import threading
 
 # ==============================
 # Colors
@@ -115,11 +116,18 @@ class AsyncMovementResult:
     Attributes:
         ready: True when movement_result is available.
         movement_result: The parsed MovementResult once ready.
-        task: asyncio.Task driving the request; await it to wait for completion.
+        task: asyncio.Task if scheduled on a running loop, otherwise None.
     """
-    ready: bool = False
-    movement_result: Optional[MovementResult] = None
-    task: asyncio.Task | None = None
+    def __init__(self) -> None:
+        self.ready: bool = False
+        self.movement_result: Optional[MovementResult] = None
+        self.task: Optional[asyncio.Task] = None
+        self._done = threading.Event()
+
+    def wait(self, timeout: Optional[float] = None) -> Optional[MovementResult]:
+        """Block until finished. Returns the result (or None on timeout)."""
+        finished = self._done.wait(timeout)
+        return self.movement_result if finished else None
 
 # ==============================
 # Visual Session Identifier (VSID)
@@ -161,7 +169,6 @@ class VisualSessionIdentifier:
     @color.setter
     def color(self, value: Color) -> None:
         self._color = value
-
 
 # ==============================
 # Session Identifier (SID + VSID)
@@ -218,6 +225,39 @@ class SessionIdentifier:
             raise ValueError("No VSID associated with this SessionIdentifier.")
         self.vsid.color = value
 
+SessionIdentifierLike = Union[
+    "SessionIdentifier",
+    "VisualSessionIdentifier",
+    Tuple[str, "Color"],
+    str,
+    None,
+]
+
+def _coerce_session_identifier(value: SessionIdentifierLike) -> Optional["SessionIdentifier"]:
+    """
+    Convert various identifier-like inputs into a SessionIdentifier.
+
+    - SessionIdentifier -> returned as-is
+    - VisualSessionIdentifier -> wrapped into SessionIdentifier(vsid)
+    - (str, Color) -> VisualSessionIdentifier(str, Color) -> SessionIdentifier
+    - str -> VisualSessionIdentifier(str, Color.White) -> SessionIdentifier
+    - None -> None
+    """
+    if value is None:
+        return None
+    from typing import cast
+    if isinstance(value, SessionIdentifier):
+        return value
+    if isinstance(value, VisualSessionIdentifier):
+        return SessionIdentifier(value)
+    if isinstance(value, tuple):
+        ident, color = value
+        return SessionIdentifier(VisualSessionIdentifier(ident, color))
+    if isinstance(value, str):
+        return SessionIdentifier(VisualSessionIdentifier(value, Color.White))
+    raise TypeError(
+        "identifier must be SessionIdentifier | VisualSessionIdentifier | (str, Color) | str | None"
+    )
 
 # ==============================
 # Remote game session
@@ -280,27 +320,53 @@ class RemoteGameSession:
         resp.raise_for_status()
         return self._parse_move_response(resp.json())
 
-    async def move_async(self, move: Union[np.ndarray, Sequence[int]]) -> AsyncMovementResult:
+    def move_async(self, move: Union[np.ndarray, Sequence[int]]) -> AsyncMovementResult:
         """
-        Send an asynchronous move request and return an async handle immediately.
+        Start a move in the background and return a handle immediately.
 
-        The request runs in the background. Check `handle.ready` or await `handle.task`.
-        When done, `handle.movement_result` contains the MovementResult.
+        - If an asyncio event loop is running in this thread, schedule the HTTP request on it.
+        - Otherwise, run the request on a background thread.
         """
         dx, dy = self._normalize_move(move)
         payload = {"sid": self.sid, "dx": dx, "dy": dy}
-
         handle = AsyncMovementResult()
 
-        async def _runner():
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.server_url}/move", json=payload)
-                resp.raise_for_status()
-                result = self._parse_move_response(resp.json())
+        async def _runner_async():
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(f"{self.server_url}/move", json=payload)
+                    resp.raise_for_status()
+                    result = self._parse_move_response(resp.json())
+            except Exception as e:
+                self.last_response_message = str(e)
+                result = MovementResult(False, False, None)
             handle.movement_result = result
             handle.ready = True
+            handle._done.set()
 
-        handle.task = asyncio.create_task(_runner())
+        def _runner_thread():
+            try:
+                with httpx.Client(timeout=self._sync_client.timeout) as client:
+                    resp = client.post(f"{self.server_url}/move", json=payload)
+                    resp.raise_for_status()
+                    result = self._parse_move_response(resp.json())
+            except Exception as e:
+                self.last_response_message = str(e)
+                result = MovementResult(False, False, None)
+            handle.movement_result = result
+            handle.ready = True
+            handle._done.set()
+
+        # Try to use an existing running loop; otherwise fall back to a thread
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            t = threading.Thread(target=_runner_thread, daemon=True)
+            t.start()
+            handle.task = None
+        else:
+            handle.task = loop.create_task(_runner_async())
+
         return handle
 
 
@@ -323,7 +389,7 @@ class RemoteGameSessionFactory:
         self.username = username
         self._sync_client = httpx.Client(timeout=timeout)
 
-    def create(self, identifier: Optional[SessionIdentifier] = None) -> RemoteGameSession:
+    def create(self, identifier: SessionIdentifierLike = None) -> RemoteGameSession:
         """
         Connect to the server and create a new remote session.
 
@@ -333,11 +399,14 @@ class RemoteGameSessionFactory:
         Returns:
             A RemoteGameSession bound to the created `sid`.
         """
+
+        ident_obj = _coerce_session_identifier(identifier)
+
         vsid_payload = None
-        if identifier is not None and identifier.vsid is not None:
+        if ident_obj is not None and ident_obj.vsid is not None:
             vsid_payload = {
-                "identifierStr": identifier.vsid.identifier_str,
-                "color": str(identifier.vsid.color),
+                "identifierStr": ident_obj.vsid.identifier_str,
+                "color": str(ident_obj.vsid.color),
             }
 
         resp = self._sync_client.post(
@@ -354,7 +423,7 @@ class RemoteGameSessionFactory:
         if not sid:
             raise RuntimeError("Invalid response from server: missing 'sid'.")
 
-        if identifier is not None:
-            identifier.sid = sid
+        if ident_obj is not None:
+            ident_obj.sid = sid
 
         return RemoteGameSession(self.server_url, sid)

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "remote-explorer-game"
+version = "0.1.0"
+description = "Client library for the Remote Explorer Game"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "David Krcmar" }]
+keywords = ["game", "client", "httpx", "explorer"]
+dependencies = [
+  "httpx>=0.24",
+  "numpy>=1.24",
+]
+
+[tool.setuptools]
+package-dir = {"" = "py-lib"}
+
+[tool.setuptools.packages.find]
+where = ["py-lib"]
+include = ["remote_explorer_game*"]
