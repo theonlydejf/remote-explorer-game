@@ -145,10 +145,12 @@ static class Config
     [CLIConfigCheckBounds(1, double.PositiveInfinity)]
     public static uint MAP_GROW_SIZE_2D = 3;
 
-    [CLIHelp("Prefix used in agent's SID.")]
-    public static char AGENT_SID_PREFIX = '[';
-    [CLIHelp("Color used in agent's SID.")]
-    public static ConsoleColor AGENT_SID_COLOR = ConsoleColor.Blue;
+    [CLIHelp("Should the agents use VSIDs?")]
+    public static bool AGENT_USE_VSID = true;
+    [CLIHelp("Prefix used in agent's VSID.")]
+    public static char AGENT_VSID_PREFIX = '[';
+    [CLIHelp("Color used in agent's VSID.")]
+    public static ConsoleColor AGENT_VSID_COLOR = ConsoleColor.Blue;
     [CLIHelp("Total number of agents.")]
     public static uint AGENT_CNT = 5;
     [CLIHelp("Number of the total agents should have jumping enabled.")]
@@ -247,7 +249,15 @@ static class Config
         {
             var helpAttr = field.GetCustomAttribute<CLIHelpAttribute>();
             string help = helpAttr != null ? helpAttr.HelpText : "";
-            Console.WriteLine($"  --{field.Name.ToLower().Replace("_", "-")}: {field.GetValue(null)} (type: {field.FieldType.Name}){(string.IsNullOrWhiteSpace(help) ? "" : " - " + help)}");
+            var boundsAttr = field.GetCustomAttribute<CLIConfigCheckBounds>();
+            string boundsInfo = boundsAttr == null ? "" : $" from <{boundsAttr.Min}, {boundsAttr.Max}>";
+
+            string optionName = $"--{field.Name.ToLower().Replace("_", "-")}";
+            string valueStr = $"(default: {field.GetValue(null)})";
+            string typeStr = $"{field.FieldType.Name}{boundsInfo}";
+            string helpStr = string.IsNullOrWhiteSpace(help) ? "" : help;
+
+            Console.WriteLine($"  {optionName + " " + valueStr,-45} {typeStr,-25}{helpStr}");
         }
     }
 }
@@ -312,13 +322,20 @@ class Program
         RemoteGameSessionFactory factory = new RemoteGameSessionFactory($"http://{Config.SERVER_IP}:{Config.SERVER_PORT}/", Config.PLAYER_NAME);
 
         // Map with a starting size
-        Map map = new Map((int)Config.MAP_START_WIDTH, (int)Config.MAP_START_HEIGHT);
+        DiscoverableMap map = new DiscoverableMap((int)Config.MAP_START_WIDTH, (int)Config.MAP_START_HEIGHT);
 
         // Init agents
         Agent[] agents = new Agent[Config.AGENT_CNT];
         for (int i = 0; i < agents.Length; i++)
         {
-            agents[i] = new Agent(factory, new SessionIdentifier(Config.AGENT_SID_PREFIX.ToString() + i, Config.AGENT_SID_COLOR), map, i < Config.AGENT_JUMPER_CNT);
+            SessionIdentifier? sid = null;
+            if (Config.AGENT_USE_VSID)
+            {
+                // Supports up to 64 agents
+                /* 🐷 */ string postfix = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz?!"[i % 64].ToString();
+                sid = new SessionIdentifier(Config.AGENT_VSID_PREFIX.ToString() + postfix, Config.AGENT_VSID_COLOR);
+            }
+            agents[i] = new Agent(factory, sid, map, i < Config.AGENT_JUMPER_CNT);
             agents[i].Step();
         }
 
@@ -413,12 +430,12 @@ class Agent
     /// <summary>
     /// Assigned SID of this agent
     /// </summary>
-    public SessionIdentifier Identifier { get; }
+    public SessionIdentifier? Identifier { get; }
     
     /// <summary>
     /// Reference to a Map, which the agent is trying to discover
     /// </summary>
-    public Map Map { get; }
+    public DiscoverableMap Map { get; }
 
     /// <summary>
     /// AsyncMovementResult of the movement performed by last Step()
@@ -466,13 +483,13 @@ class Agent
     /// <param name="identifier"></param>
     /// <param name="map"></param>
     /// <param name="allowJumps"></param>
-    public Agent(RemoteGameSessionFactory factory, SessionIdentifier identifier, Map map, bool allowJumps = true)
+    public Agent(RemoteGameSessionFactory factory, SessionIdentifier? identifier, DiscoverableMap map, bool allowJumps = true)
     {
         this.factory = factory;
         Identifier = identifier;
         Map = map;
         AllowJumps = allowJumps;
-        StepMovementResult = new AsyncMovementResult(true, new MovementResult(false, true), Task.CompletedTask);
+        StepMovementResult = new AsyncMovementResult(true, new MovementResult(false, true, null), Task.CompletedTask);
 
         lock (Sync)
         {
@@ -790,12 +807,12 @@ class Agent
 /// and efficient searching for undiscovered cells. Provides methods to grow the map,access
 /// cells, and select the closest or a random undiscovered cell for exploration.
 /// </summary>
-class Map
+class DiscoverableMap
 {
     private CellState[,] map;
 
     
-    public Map(int width, int height)
+    public DiscoverableMap(int width, int height)
     {
         map = new CellState[width, height];
         UndiscoveredCnt = width * height;

@@ -3,13 +3,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
-    <RootNamespace>ExampleSimple</RootNamespace>
+    <RootNamespace>example_custom_server</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../explorer-game/explorer-game.csproj" />
+    <ProjectReference Include="../../../explorer-game/explorer-game.csproj" />
   </ItemGroup>
 
 </Project>

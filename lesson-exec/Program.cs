@@ -14,7 +14,7 @@ public partial class Program
     public static void Main(string[] args)
     {
         // Test world map
-        Tile?[,] testWorldMap = GameFactory.MapFromImage(Path.Combine(AppContext.BaseDirectory, "resources", "test-map.png"));
+        Map testWorldMap = GameFactory.MapFromImage(Path.Combine(AppContext.BaseDirectory, "resources", "test-map.png"));
 
         // Load challange world maps
         string resourcesPath = "resources";
@@ -27,7 +27,7 @@ public partial class Program
                 .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
                 .ToArray();
         }
-        Tile?[][,] challangeMaps = challengeFiles
+        Map[] challangeMaps = challengeFiles
             .Select(f => GameFactory.MapFromImage(f))
             .ToArray();
 
@@ -46,7 +46,7 @@ public partial class Program
 
             try
             {
-                logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
+                logger = new Logger(1, testWorldMap.Height + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.Height - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
                 break;
             }
             catch
@@ -57,7 +57,7 @@ public partial class Program
             }
         } 
 
-        ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (testWorldMap.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
+        ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (testWorldMap.Width * 2 + 2) / 2, 0), ConsoleSync.sync);
         viz.AttachMap(testWorldMap);
 
         // Start test world server
@@ -119,10 +119,15 @@ class SessionConnectedLogger
                 return;
             }
 
-            logger.Write("Connected with '", ConsoleColor.White);
-            if (e.SessionIdentifier != null)
-                logger.Write(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
-            logger.Write("' into '", ConsoleColor.White);
+            
+            logger.Write("Connected ", ConsoleColor.White);
+            if (e.SessionIdentifier != null && e.SessionIdentifier.HasVSID)
+            {
+                logger.Write("with '", ConsoleColor.White);
+                logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
+                logger.Write("' ", ConsoleColor.White);
+            }
+            logger.Write("into '", ConsoleColor.White);
             logger.Write(world, worldColor);
             logger.WriteLine($"'", ConsoleColor.White);
 
