@@ -17,21 +17,10 @@
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build example-solution",
-        "program": "${workspaceFolder}/examples/csharp/06-example-solution/bin/Debug/net7.0/06-example-solution.dll",
+        "program": "${workspaceFolder}/examples/csharp/06-example-solution/bin/Debug/net7.0/example-solution.dll",
         "args": [],
         "cwd": "${workspaceFolder}",
         "stopAtEntry": false,
-        "console": "integratedTerminal"
-      },
-      {
-        "name": "Debug solution",
-        "type": "coreclr",
-        "request": "launch",
-        "preLaunchTask": "build solution",
-        "program": "${workspaceFolder}/example-solution/bin/Debug/net7.0/example-solution.dll",
-        "args": [],
-        "cwd": "${workspaceFolder}",
-        "stopAtEntry": true,
         "console": "integratedTerminal"
       }
     ]

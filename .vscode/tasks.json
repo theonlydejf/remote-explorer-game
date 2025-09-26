@@ -17,17 +17,7 @@
         "type": "process",
         "args": [
           "build",
-          "${workspaceFolder}/examples/csharp/06-example-solution/06-example-solution.csproj"
-        ],
-        "problemMatcher": "$msCompile"
-      },
-      {
-        "label": "build solution",
-        "command": "dotnet",
-        "type": "process",
-        "args": [
-          "build",
-          "${workspaceFolder}/example-solution/example-solution.csproj"
+          "${workspaceFolder}/examples/csharp/06-example-solution/example-solution.csproj"
         ],
         "problemMatcher": "$msCompile"
       }
