@@ -45,7 +45,7 @@ namespace ExampleFeedback
             // result = session.Move(new Vector(6, -9)); // Uncomment me to try me out
 
             // Agent hits a wall => successful move but does not survive
-            result = session.Move(new Vector(0, -1)); // Uncomment me to try me out
+            // result = session.Move(new Vector(0, -1)); // Uncomment me to try me out
 
             if (result.IsAgentAlive) // Check if the agent survived the move
             {
