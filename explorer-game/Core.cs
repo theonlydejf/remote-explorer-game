@@ -83,13 +83,39 @@ public struct Vector
 /// </summary>
 public struct Tile
 {
-    public char Left { get; set; }
-    public char Right { get; set; }
+    private char left;
+    private char right;
+
+    public char Left
+    {
+        get => left;
+        set
+        {
+            if (!IsGoodChar(value))
+                throw new ArgumentException("Left character is not allowed for Tile");
+            left = value;
+        }
+    }
+
+    public char Right
+    {
+        get => right;
+        set
+        {
+            if (!IsGoodChar(value))
+                throw new ArgumentException("Right character is not allowed for Tile");
+            right = value;
+        }
+    }
 
     public Tile(char left, char right)
     {
-        Left = left;
-        Right = right;
+        if (!IsGoodChar(left))
+            throw new ArgumentException("Left character is not allowed for Tile");
+        if (!IsGoodChar(right))
+            throw new ArgumentException("Right character is not allowed for Tile");
+        this.left = left;
+        this.right = right;
     }
 
     /// <summary>
@@ -100,9 +126,12 @@ public struct Tile
     {
         if (str.Length != 2)
             throw new ArgumentException("Tile can be constructed only from string of length 2");
-
-        Left = str[0];
-        Right = str[1];
+        if (!IsGoodChar(str[0]))
+            throw new ArgumentException("Left character is not allowed for Tile");
+        if (!IsGoodChar(str[1]))
+            throw new ArgumentException("Right character is not allowed for Tile");
+        left = str[0];
+        right = str[1];
     }
 
     /// <summary>
@@ -140,6 +169,45 @@ public struct Tile
         if (jobj == null)
             return null;
         return new Tile(jobj.Value<string>("str") ?? throw new ArgumentException("Missing str in JObject"));
+    }
+
+    /// <summary>
+    /// Returns true if the character is printable and not a control character or emoji.
+    /// </summary>
+    private static bool IsGoodChar(char c)
+    {
+        // Basic check: printable ASCII (space to ~)
+        if (c >= 32 && c <= 126)
+            return true;
+
+        // Exclude control chars, surrogates, and private use
+        if (char.IsControl(c) || char.IsSurrogate(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.PrivateUse)
+            return false;
+
+        // Exclude emoji ranges (roughly)
+        int code = c;
+        if ((code >= 0x1F600 && code <= 0x1F64F) || // Emoticons
+            (code >= 0x1F300 && code <= 0x1F5FF) || // Misc Symbols and Pictographs
+            (code >= 0x1F680 && code <= 0x1F6FF) || // Transport and Map
+            (code >= 0x2600 && code <= 0x26FF) ||   // Misc symbols
+            (code >= 0x2700 && code <= 0x27BF))     // Dingbats
+            return false;
+
+        // Accept other printable non-emoji Unicode
+        var cat = char.GetUnicodeCategory(c);
+        return cat == System.Globalization.UnicodeCategory.UppercaseLetter ||
+               cat == System.Globalization.UnicodeCategory.LowercaseLetter ||
+               cat == System.Globalization.UnicodeCategory.DecimalDigitNumber ||
+               cat == System.Globalization.UnicodeCategory.OtherLetter ||
+               cat == System.Globalization.UnicodeCategory.OtherNumber ||
+               cat == System.Globalization.UnicodeCategory.MathSymbol ||
+               cat == System.Globalization.UnicodeCategory.CurrencySymbol ||
+               cat == System.Globalization.UnicodeCategory.ModifierSymbol ||
+               cat == System.Globalization.UnicodeCategory.OtherSymbol ||
+               cat == System.Globalization.UnicodeCategory.SpaceSeparator ||
+               cat == System.Globalization.UnicodeCategory.DashPunctuation ||
+               cat == System.Globalization.UnicodeCategory.ConnectorPunctuation ||
+               cat == System.Globalization.UnicodeCategory.OtherPunctuation;
     }
 }
 
