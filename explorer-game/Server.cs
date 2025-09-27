@@ -66,6 +66,11 @@ public class ConnectionHandler
     private readonly Dictionary<string, List<string>> clientSessions = new();
 
     /// <summary>
+    /// Number of active sessions
+    /// </summary>
+    public int SessionCount => sessionsById.Count;
+
+    /// <summary>
     /// Global map of sessionId -> session wrapper.
     /// </summary>
     private readonly Dictionary<string, SessionWrapper> sessionsById = new();
@@ -283,7 +288,7 @@ public class ConnectionHandler
                 clientSessions[clientId] = new();
 
             // Limit sessions per client to avoid abuse.
-            if (clientSessions[clientId].Count >= 5)
+            if (clientSessions[clientId].Count >= 20)
                 return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);

@@ -9,12 +9,42 @@ public static class ConsoleSync
     public static object sync = new object();
 }
 
+class WorldInfo
+{
+    public string Name { get; set; }
+    public ConsoleColor Color { get; set; }
+    public int Port { get; set; }
+    public Tile?[,] Map { get; set; }
+    public ConnectionHandler? connectionHandler = null;
+
+    public WorldInfo(string name, ConsoleColor color, int port, Tile?[,] map)
+    {
+        Name = name;
+        Color = color;
+        Port = port;
+        Map = map;
+    }
+}
+
 public partial class Program
 {
+    private enum VisualizerHAlignement
+    {
+        Left,
+        Centered,
+        Right
+    }
+
     public static void Main(string[] args)
     {
         // Test world map
         Tile?[,] testWorldMap = GameFactory.MapFromImage(Path.Combine(AppContext.BaseDirectory, "resources", "test-map.png"));
+        WorldInfo testWorldInfo = new WorldInfo(
+                $"Test World",
+                ConsoleColor.Cyan,
+                8080,
+                testWorldMap
+        );
 
         // Load challange world maps
         string resourcesPath = "resources";
@@ -27,27 +57,43 @@ public partial class Program
                 .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
                 .ToArray();
         }
-        Tile?[][,] challangeMaps = challengeFiles
-            .Select(f => GameFactory.MapFromImage(f))
-            .ToArray();
 
+        var worlds = challengeFiles
+            .Select((f, i) => new WorldInfo(
+                $"Challenge {i + 1}",
+                ConsoleColor.Green,
+                8081 + i,
+                GameFactory.MapFromImage(f)
+            )).ToList();
+        worlds.Insert(0, testWorldInfo);
 
         Logger logger;
+        bool winTooSmall;
         while (true)
         {
+            winTooSmall = Console.WindowWidth < testWorldMap.GetLength(0) * 2 + 2;
+
             // Initial terminal setup
             Console.CursorVisible = false;
             Console.Clear();
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.Write("Press ESC or Q to exit");
+            string exitMsg = "Press ESC or Q to exit";
+            Console.SetCursorPosition(Console.WindowWidth / 2 - exitMsg.Length / 2, Console.WindowHeight - 1);
+            Console.Write(exitMsg);
             Console.ResetColor();
 
             try
             {
                 logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
-                break;
+                if (!winTooSmall)
+                    break;
             }
             catch
+            {
+                winTooSmall = true;
+            }
+
+            if (winTooSmall)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 string message = "Terminal window is too small\nResize it and press any key to try again...";
@@ -75,31 +121,88 @@ public partial class Program
 
         // Start test world server
         CancellationTokenSource cts = new();
-        ConnectionHandler testConnectionHandler = new(testWorldMap, viz);
-        Task testServerTask = testConnectionHandler.StartHttpServer(8080, cts.Token);
-        testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
-        logger.WriteLine("Test server started on port 8080", ConsoleColor.Yellow);
+        testWorldInfo.connectionHandler = new(testWorldMap, viz);
+        Task testServerTask = testWorldInfo.connectionHandler.StartHttpServer(testWorldInfo.Port, cts.Token);
+        testWorldInfo.connectionHandler.SessionConnected += new SessionConnectedLogger(
+            logger,
+            testWorldInfo,
+            () => UpdateServerStatus()
+        ).Handler;
+        testWorldInfo.connectionHandler.SessionConnected += (sender, e) => UpdateServerStatus();
+        logger.Write(testWorldInfo.Name, testWorldInfo.Color);
+        logger.WriteLine($" server started on port {testWorldInfo.Port}", ConsoleColor.Yellow);
 
         // Start challenge world servers
-        ConnectionHandler[] challangeConnectionHandlers = new ConnectionHandler[challangeMaps.Length];
-        Task[] challengeServerTasks = new Task[challangeMaps.Length];
-        for (int i = 0; i < challangeMaps.Length; i++)
+        Task[] challengeServerTasks = new Task[worlds.Count];
+        for (int i = 1; i < worlds.Count; i++)
         {
-            challangeConnectionHandlers[i] = new ConnectionHandler(challangeMaps[i], null);
-            challangeConnectionHandlers[i].SessionConnected += new SessionConnectedLogger(logger, $"Challenge {i + 1}", ConsoleColor.Green).Handler;
-            challengeServerTasks[i] = challangeConnectionHandlers[i].StartHttpServer(8080 + i + 1, cts.Token);
-            logger.WriteLine($"Challenge {i + 1} server started on port {8080 + i + 1}", ConsoleColor.Yellow);
+            worlds[i].connectionHandler = new ConnectionHandler(worlds[i].Map, null);
+            worlds[i].connectionHandler!.SessionConnected += new SessionConnectedLogger(
+                logger,
+                worlds[i],
+                () => UpdateServerStatus()
+            ).Handler;
+            worlds[i].connectionHandler!.SessionConnected += (sender, e) => UpdateServerStatus();
+            challengeServerTasks[i] = worlds[i].connectionHandler!.StartHttpServer(worlds[i].Port, cts.Token);
+            logger.Write(worlds[i].Name, worlds[i].Color);
+            logger.WriteLine($" server started on port {worlds[i].Port}", ConsoleColor.Yellow);
         }
 
+        VisualizerHAlignement vizAlignement = UpdateServerStatus();
+        if (vizAlignement == VisualizerHAlignement.Left)
+            viz.WindowLocation = new(1, 0);
+        else if (vizAlignement == VisualizerHAlignement.Right)
+            viz.WindowLocation = new(Console.WindowWidth - testWorldMap.GetLength(0)*2 - 2 - 2, 0);
+        UpdateServerStatus();
+
         // Wait until exit key is pressed
-        while (!IsExitKey(Console.ReadKey(true).Key))
-        {
-            // Pass
-        }
+        while (!IsExitKey(Console.ReadKey(true).Key)) { /* Pass */ }
 
         // Clear up the terminal
         CleanUp();
         cts.Cancel();
+
+        VisualizerHAlignement UpdateServerStatus()
+        {
+            // Line format
+            // <world name> on <port>: XX agents
+            //  port - 5 digits at most are expected
+            //  clients - 3 digits at most are expected
+            // => roughly worldName.Len + 22 max msg len expected
+            const int MAX_EXPECTED_POSTFIX_LEN = 22;
+
+            VisualizerHAlignement vizLoc;
+            int maxLen = 0;
+            foreach (var world in worlds)
+            {
+                int len = world.Name.Length + MAX_EXPECTED_POSTFIX_LEN;
+                if (len > maxLen)
+                    maxLen = len;
+            }
+
+            if (maxLen >= Console.WindowWidth - testWorldMap.GetLength(0) * 2 - 3)
+                return VisualizerHAlignement.Centered;
+            else if (maxLen >= Console.WindowWidth / 2 - (testWorldMap.GetLength(0) * 2 + 2) / 2 + 1)
+                vizLoc = VisualizerHAlignement.Right;
+            else
+                vizLoc = VisualizerHAlignement.Centered;
+
+            Console.SetCursorPosition(0, (testWorldMap.GetLength(1) + 1) / 2 - worlds.Count / 2);
+            foreach (var world in worlds)
+            {
+                Console.Write(' ');
+                Console.ForegroundColor = world.Color;
+                Console.Write(world.Name);
+                Console.ResetColor();
+                Console.Write(new string(' ', maxLen - MAX_EXPECTED_POSTFIX_LEN - world.Name.Length));
+                Console.WriteLine(
+                    $" on {world.Port}: {(world.connectionHandler?.SessionCount)?.ToString() ?? "ERR"} agents"
+                    .PadRight(MAX_EXPECTED_POSTFIX_LEN)
+                );
+            }
+
+            return vizLoc;
+        }
     }
 
     static bool IsExitKey(ConsoleKey key) => new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(key);
@@ -116,12 +219,14 @@ class SessionConnectedLogger
     private Logger logger;
     private string world;
     private ConsoleColor worldColor;
+    private Action? updateAgentStats;
 
-    public SessionConnectedLogger(Logger logger, string world, ConsoleColor worldColor)
+    public SessionConnectedLogger(Logger logger, WorldInfo worldInfo, Action? updateAgentStats = null)
     {
         this.logger = logger;
-        this.world = world;
-        this.worldColor = worldColor;
+        world = worldInfo.Name;
+        worldColor = worldInfo.Color;
+        this.updateAgentStats = updateAgentStats;
     }
 
     public void Handler(object? sender, SessionConnectedEventArgs e)
@@ -148,9 +253,8 @@ class SessionConnectedLogger
                 logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
                 logger.Write("' ", ConsoleColor.White);
             }
-            logger.Write("into '", ConsoleColor.White);
-            logger.Write(world, worldColor);
-            logger.WriteLine($"'", ConsoleColor.White);
+            logger.Write("into ", ConsoleColor.White);
+            logger.WriteLine(world, worldColor);
 
             if (e.GameSession == null)
             {
@@ -160,6 +264,7 @@ class SessionConnectedLogger
         }
 
         e.GameSession.AgentDied += new AgentDiedLogger(e, logger, world, worldColor).Handler;
+        e.GameSession.AgentDied += (sender, e) => updateAgentStats?.Invoke();
     }
 }
 
