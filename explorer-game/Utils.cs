@@ -18,7 +18,7 @@ public static class GameFactory
     /// <param name="imgPath">Path to the image file.</param>
     /// <returns>A 2D array of tiles representing the map.</returns>
     /// <exception cref="FileNotFoundException">Thrown if the image file does not exist.</exception>
-    public static Map MapFromImage(string imgPath)
+    public static Tile?[,] MapFromImage(string imgPath)
     {
         if (!File.Exists(imgPath))
             throw new FileNotFoundException();
@@ -26,7 +26,7 @@ public static class GameFactory
         using var image = Image.Load<Rgba32>(imgPath);
         int width = image.Width;
         int height = image.Height;
-        Map result = new Map(width, height);
+        Tile?[,] result = new Tile?[width, height];
 
         for (int y = 0; y < height; y++)
         {
@@ -52,12 +52,12 @@ public static class GameFactory
     /// </summary>
     /// <param name="originalMap">The original map array in [row, col] form.</param>
     /// <returns>A transposed map array in [x, y] form.</returns>
-    private static Map TransposeMap(Map originalMap)
+    private static Tile?[,] TransposeMap(Tile?[,] originalMap)
     {
-        int rows = originalMap.Width;
-        int cols = originalMap.Height;
+        int rows = originalMap.GetLength(0);
+        int cols = originalMap.GetLength(1);
 
-        Map transposedMap = new Map(cols, rows);
+        Tile?[,] transposedMap = new Tile?[cols, rows];
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)

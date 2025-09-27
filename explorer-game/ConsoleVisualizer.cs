@@ -40,7 +40,7 @@ public class ConsoleVisualizer
     /// <summary>
     /// Current map being displayed. Nullable until explicitly attached.
     /// </summary>
-    private Map? map = null;
+    private Tile?[,]? map = null;
 
     /// <summary>
     /// Creates a new console visualizer at a given window location.
@@ -104,7 +104,7 @@ public class ConsoleVisualizer
     /// Manually attaches a map without attaching a session.
     /// Can only be called once, since visualizer is bound to a single map.
     /// </summary>
-    public void AttachMap(Map map)
+    public void AttachMap(Tile?[,] map)
     {
         if (this.map != null)
             throw new InvalidOperationException("Map can be attached only once");
@@ -153,8 +153,8 @@ public class ConsoleVisualizer
             return;
         }
 
-        int w = map.Width;
-        int h = map.Height;
+        int w = map.GetLength(0);
+        int h = map.GetLength(1);
 
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
@@ -174,7 +174,8 @@ public class ConsoleVisualizer
         }
 
         // Skip invalid coordinates (e.g. if agent moves outside map).
-        if (!map.IsInBounds(loc))
+        if (loc.X < 0 || loc.X >= map.GetLength(0) ||
+            loc.Y < 0 || loc.Y >= map.GetLength(1))
         {
             return;
         }
@@ -218,8 +219,8 @@ public class ConsoleVisualizer
 
             // No agents -> restore underlying map tile or empty space.
             Console.ResetColor();
-            if (map[loc].HasValue)
-                Console.Write(map[loc].ToString());
+            if (map[loc.X, loc.Y].HasValue)
+                Console.Write(map[loc.X, loc.Y].ToString());
             else
                 Console.Write("  "); // Two spaces so layout remains aligned
         }
@@ -231,8 +232,8 @@ public class ConsoleVisualizer
     /// </summary>
     private void PrintBorder()
     {
-        int w = map?.Width ?? EMPTY_WINDOW_SIZE.X;
-        int h = map?.Height ?? EMPTY_WINDOW_SIZE.Y;
+        int w = map?.GetLength(0) ?? EMPTY_WINDOW_SIZE.X;
+        int h = map?.GetLength(1) ?? EMPTY_WINDOW_SIZE.Y;
 
         lock (consoleLock)
         {

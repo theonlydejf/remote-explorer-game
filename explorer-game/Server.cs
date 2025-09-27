@@ -57,7 +57,7 @@ public class SessionConnectedEventArgs : EventArgs
 public class ConnectionHandler
 {
     private readonly ConsoleVisualizer? visualizer;
-    private readonly Map map;
+    private readonly Tile?[,] map;
     private readonly object sync = new object();
 
     /// <summary>
@@ -88,7 +88,7 @@ public class ConnectionHandler
     /// <summary>
     /// Creates a handler bound to a specific map; optionally hooks a visualizer for live updates.
     /// </summary>
-    public ConnectionHandler(Map map, ConsoleVisualizer? visualizer)
+    public ConnectionHandler(Tile?[,] map, ConsoleVisualizer? visualizer)
     {
         this.map = map;
         this.visualizer = visualizer;

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
@@ -336,7 +335,7 @@ public class SessionIdentifier
     /// <summary>
     /// Creates a session identifier backed by a new <see cref="VisualSessionIdentifier"/>.
     /// </summary>
-    public SessionIdentifier(string identifier, ConsoleColor color = ConsoleColor.White, Map? map = null)
+    public SessionIdentifier(string identifier, ConsoleColor color = ConsoleColor.White, Tile?[,]? map = null)
         : this(new VisualSessionIdentifier(identifier, color, map)) { }
 
     /// <summary>
@@ -404,7 +403,7 @@ public class VisualSessionIdentifier
     /// <param name="identifierStr">Two-character identifier.</param>
     /// <param name="color">Requested console color.</param>
     /// <param name="map">Optional map to detect collisions with tile strings.</param>
-    public static bool IsReserved(string identifierStr, ConsoleColor color, Map? map = null)
+    public static bool IsReserved(string identifierStr, ConsoleColor color, Tile?[,]? map = null)
     {
         // If map is provided, prevent identifiers that collide with tile strings or empty space.
         if (map != null && color == ConsoleColor.White)
@@ -435,7 +434,7 @@ public class VisualSessionIdentifier
     /// <summary>
     /// Returns true if the given identifier instance is reserved.
     /// </summary>
-    public static bool IsReserved(VisualSessionIdentifier identifier, Map? map = null)
+    public static bool IsReserved(VisualSessionIdentifier identifier, Tile?[,]? map = null)
         => IsReserved(identifier.IdentifierStr, identifier.Color, map);
 
     /// <summary>
@@ -454,7 +453,7 @@ public class VisualSessionIdentifier
         return !INVALID_COLORS.Contains(color);
     }
 
-    private Map? map;
+    private Tile?[,]? map;
 
     private ConsoleColor color;
 
@@ -516,165 +515,10 @@ public class VisualSessionIdentifier
     /// <exception cref="ArgumentException">
     /// Thrown when the identifier string is too long, the color is invalid, or the combination is reserved.
     /// </exception>
-    public VisualSessionIdentifier(string identifierStr, ConsoleColor color = ConsoleColor.White, Map? map = null)
+    public VisualSessionIdentifier(string identifierStr, ConsoleColor color = ConsoleColor.White, Tile?[,]? map = null)
     {
         this.map = map;
         IdentifierStr = identifierStr;
         Color = color;
-    }
-}
-
-/// <summary>
-/// Represents a two-dimensional map composed of <see cref="Tile"/> entries.
-/// Each cell may contain a tile or be empty (<c>null</c>).
-/// Coordinates use row-major storage: <c>tiles[y, x]</c>.
-/// </summary>
-public class Map : IEnumerable<Tile?>
-{
-    private readonly Tile?[,] tiles;
-
-    /// <summary>
-    /// Gets the width of the map (number of columns).
-    /// </summary>
-    public int Width => tiles.GetLength(1);
-
-    /// <summary>
-    /// Gets the height of the map (number of rows).
-    /// </summary>
-    public int Height => tiles.GetLength(0);
-
-    /// <summary>
-    /// Creates a new empty map with the specified width and height.
-    /// </summary>
-    /// <param name="w">Width of the map (number of columns).</param>
-    /// <param name="h">Height of the map (number of rows).</param>
-    public Map(int w, int h)
-    {
-        tiles = new Tile?[w, h]; // storage is [rows, columns] = [y, x]
-    }
-
-    /// <summary>
-    /// Creates a map from an existing two-dimensional tile array.
-    /// </summary>
-    /// <param name="tiles">2D array of tiles (may contain null entries).</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="tiles"/> is null.</exception>
-    public Map(Tile?[,] tiles)
-    {
-        this.tiles = tiles ?? throw new ArgumentNullException(nameof(tiles));
-    }
-
-    /// <summary>
-    /// Gets or sets the tile at the given row and column.
-    /// </summary>
-    /// <param name="x">Column index.</param>
-    /// <param name="y">Row index.</param>
-    /// <returns>The tile at the specified location, or <c>null</c> if empty.</returns>
-    public Tile? this[int x, int y]
-    {
-        get => tiles[x, y];
-        set => tiles[x, y] = value;
-    }
-
-    /// <summary>
-    /// Gets or sets the tile at the given position using a <see cref="Vector"/>.
-    /// Note: <see cref="Vector.X"/> is the column index and <see cref="Vector.Y"/> is the row index.
-    /// </summary>
-    /// <param name="v">Vector representing the coordinates (X = column, Y = row).</param>
-    /// <returns>The tile at the specified location, or <c>null</c> if empty.</returns>
-    public Tile? this[Vector v]
-    {
-        get => this[v.X, v.Y];
-        set => this[v.X, v.Y] = value;
-    }
-
-    /// <summary>
-    /// Determines whether the given row and column indices are within map bounds.
-    /// </summary>
-    /// <param name="x">Column index to check.</param>
-    /// <param name="y">Row index to check.</param>
-    /// <returns><c>true</c> if the indices are valid; otherwise <c>false</c>.</returns>
-    public bool IsInBounds(int x, int y)
-    {
-        return x >= 0 && x < Width && y >= 0 && y < Height;
-    }
-
-    /// <summary>
-    /// Determines whether the given vector position is within map bounds.
-    /// </summary>
-    /// <param name="v">Vector representing the coordinates (X = column, Y = row).</param>
-    /// <returns><c>true</c> if the position is valid; otherwise <c>false</c>.</returns>
-    public bool IsInBounds(Vector v) => IsInBounds(v.X, v.Y);
-
-    /// <summary>
-    /// Returns true if the given coordinates do not contain a tile.
-    /// </summary>
-    /// <param name="x">Column index.</param>
-    /// <param name="y">Row index.</param>
-    /// <returns><c>true</c> if the position is empty; otherwise <c>false</c>.</returns>
-    public bool IsSafe(int x, int y) => !this[x, y].HasValue;
-
-    /// <summary>
-    /// Returns true if the given vector position does not contain a tile.
-    /// </summary>
-    /// <param name="v">Vector representing the coordinates (X = column, Y = row).</param>
-    /// <returns><c>true</c> if the position is empty; otherwise <c>false</c>.</returns>
-    public bool IsSafe(Vector v) => IsSafe(v.X, v.Y);
-
-    /// <summary>
-    /// Returns an enumerator that iterates through all tiles in row-major order.
-    /// </summary>
-    public IEnumerator<Tile?> GetEnumerator()
-    {
-        for (int y = 0; y < Height; y++)
-            for (int x = 0; x < Width; x++)
-                yield return this[x, y];
-    }
-
-    /// <summary>
-    /// Returns an enumerator that iterates through all tiles in row-major order.
-    /// </summary>
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    /// <summary>
-    /// Determines whether the specified object is equal to the current map.
-    /// Two maps are equal if they have the same dimensions and identical tile values.
-    /// </summary>
-    /// <param name="obj">The object to compare with the current map.</param>
-    /// <returns><c>true</c> if the maps are equal; otherwise <c>false</c>.</returns>
-    public override bool Equals(object? obj)
-    {
-        if (obj is not Map other)
-            return false;
-
-        if (Width != other.Width || Height != other.Height)
-            return false;
-
-        for (int y = 0; y < Height; y++)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                if (!Equals(this[x, y], other[x, y]))
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Returns a hash code for the map.
-    /// Combines dimensions and tile values to produce a hash.
-    /// </summary>
-    public override int GetHashCode()
-    {
-        int hash = HashCode.Combine(Width, Height);
-        for (int y = 0; y < Height; y++)
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                hash = HashCode.Combine(hash, this[x, y]);
-            }
-        }
-        return hash;
     }
 }

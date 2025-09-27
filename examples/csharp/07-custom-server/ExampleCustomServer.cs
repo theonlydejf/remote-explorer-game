@@ -19,7 +19,7 @@ class Program
     static void Main()
     {
         // Create a simple 5x5 map with a few traps (marked as "##")
-        Map map = new Map(5, 5);
+        Tile?[,] map = new Tile?[5, 5];
         map[1, 1] = "##";
         map[2, 3] = "##";
         map[4, 0] = "##";

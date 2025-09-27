@@ -2,12 +2,12 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "build lesson-exec",
+        "label": "build local-exec",
         "command": "dotnet",
         "type": "process",
         "args": [
           "build",
-          "${workspaceFolder}/lesson-exec/lesson-exec.csproj"
+          "${workspaceFolder}/local-exec/local-exec.csproj"
         ],
         "problemMatcher": "$msCompile"
       },
