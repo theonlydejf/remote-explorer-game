@@ -167,7 +167,11 @@ public class LocalGameSession : IGameSession
             return new MovementResult(false, true, null);
 
         bool survivedMove = Translate(move);
-        return new MovementResult(true, survivedMove, map.IsInBounds(AgentLocation) ? map[AgentLocation] : null);
+        Tile? discovered = null;
+        if (AgentLocation.X >= 0 && AgentLocation.Y >= 0 &&
+           AgentLocation.X < map.GetLength(0) && AgentLocation.Y < map.GetLength(1))
+            discovered = map[AgentLocation.X, AgentLocation.Y];
+        return new MovementResult(true, survivedMove, discovered);
     }
 
     /// <summary>
