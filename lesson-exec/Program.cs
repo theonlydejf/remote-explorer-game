@@ -32,8 +32,6 @@ public partial class Program
             .ToArray();
 
 
-        CancellationTokenSource cts = new();
-
         Logger logger;
         while (true)
         {
@@ -51,16 +49,32 @@ public partial class Program
             }
             catch
             {
-                Console.Clear();
-                Console.WriteLine("Terminal window is too small. Resize it and press any key to try again...");
-                Console.ReadKey(true);
+                Console.ForegroundColor = ConsoleColor.Red;
+                string message = "Terminal window is too small\nResize it and press any key to try again...";
+                var lines = message.Split('\n');
+                int top = Console.WindowHeight / 2 - lines.Length / 2;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i];
+                    int left = (Console.WindowWidth - line.Length) / 2;
+                    Console.SetCursorPosition(left > 0 ? left : 0, top + i > 0 ? top + i : 0);
+                    Console.Write(line);
+                }
+                Console.CursorVisible = true;
+                if (IsExitKey(Console.ReadKey(true).Key))
+                {
+                    CleanUp();
+                    Environment.Exit(1);
+                    return;
+                }
             }
-        } 
+        }
 
         ConsoleVisualizer viz = new ConsoleVisualizer(new(Console.WindowWidth / 2 - (testWorldMap.GetLength(0) * 2 + 2) / 2, 0), ConsoleSync.sync);
         viz.AttachMap(testWorldMap);
 
         // Start test world server
+        CancellationTokenSource cts = new();
         ConnectionHandler testConnectionHandler = new(testWorldMap, viz);
         Task testServerTask = testConnectionHandler.StartHttpServer(8080, cts.Token);
         testConnectionHandler.SessionConnected += new SessionConnectedLogger(logger, "Test world", ConsoleColor.White).Handler;
@@ -78,15 +92,22 @@ public partial class Program
         }
 
         // Wait until exit key is pressed
-        while (!new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(Console.ReadKey(true).Key))
+        while (!IsExitKey(Console.ReadKey(true).Key))
         {
             // Pass
         }
 
         // Clear up the terminal
+        CleanUp();
+        cts.Cancel();
+    }
+
+    static bool IsExitKey(ConsoleKey key) => new[] { ConsoleKey.Escape, ConsoleKey.Q }.Contains(key);
+
+    static void CleanUp()
+    {
         Console.CursorVisible = true;
         Console.Clear();
-        cts.Cancel();
     }
 }
 
