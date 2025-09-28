@@ -9,6 +9,18 @@
     <RootNamespace>ExplorerGame</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet metadata -->
+    <PackageId>RemoteExplorerGame</PackageId>
+    <Authors>David Krčmář</Authors>
+    <Description>Full Remote Explorer Game library. Includes client and server.</Description>
+    <PackageTags>explorer;game;client</PackageTags>
+    <RepositoryUrl>https://github.com/user/repo</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
