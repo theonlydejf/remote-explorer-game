@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+/// <summary>
+/// A console logger that renders text inside a fixed-size bordered box,
+/// supporting colored segments, line wrapping, scrolling, and thread safety.
+/// </summary>
 public class Logger
 {
     // Synchronization object for all console operations
@@ -54,6 +58,9 @@ public class Logger
     /// <param name="height">Total height in rows, including the border.</param>
     /// <param name="borderFore">Foreground color for border characters.</param>
     /// <param name="borderBack">Background color for border characters.</param>
+    /// <param name="foreColor">Foregrounf color content.</param>
+    /// <param name="backColor">Background color for conten.</param>
+    /// <param name="sync">Sync object used when writing to console.</param>
     public Logger(int left, int top, int width, int height, ConsoleColor borderFore, ConsoleColor borderBack,
                   ConsoleColor foreColor = ConsoleColor.Black, ConsoleColor backColor = ConsoleColor.White, object? sync = null)
     {
@@ -271,9 +278,9 @@ public class Logger
             currentPartialLength = leftoverLen;
         }
     }
-
+    
     /// <summary>
-    /// Enqueues one fully-wrapped line (which is a List<Segment> whose total length <= contentWidth).
+    /// Enqueues one fully-wrapped line (which is a <see cref="List{Segment}"/> whose total length is &lt;= contentWidth).
     /// If buffer is already at capacity, dequeue one line first (scroll).
     /// </summary>
     private void EnqueueBufferLine(List<Segment> lineSegs)
@@ -291,6 +298,10 @@ public class Logger
     public void Write(string text)
         => Write(text, foreColor, backColor);
 
+    /// <summary>
+    /// Writes text without adding a newline, using default console colors.
+    /// Thread-safe: acquires syncRoot.
+    /// </summary>
     public void Write(string text, ConsoleColor fore)
         => Write(text, fore, backColor);
 
@@ -326,6 +337,10 @@ public class Logger
     public void WriteLine(string text)
         => WriteLine(text, foreColor, backColor);
 
+    /// <summary>
+    /// Writes text plus a newline, using default console colors.
+    /// Thread-safe: acquires syncRoot.
+    /// </summary>
     public void WriteLine(string text, ConsoleColor fore)
         => WriteLine(text, fore, backColor);
 
