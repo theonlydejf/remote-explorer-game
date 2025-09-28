@@ -19,5 +19,6 @@ __all__ = [
     "RemoteGameSessionFactory",
 ]
 
-# Optional: version (you can update manually or automate later)
-__version__ = "0.1.0"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("remote-explorer-game")
