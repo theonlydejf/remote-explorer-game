@@ -25,6 +25,49 @@ static class CellStateInfo
     }
 }
 
+// Put in a new file or above your classes
+static class NeighborUtils
+{
+    /// <summary>
+    /// Generates valid neighbor positions from 'pos', respecting map bounds
+    /// and the "allowJumps" rule. Uses exactly the same movement model as Agent.
+    /// </summary>
+    public static IEnumerable<Vector> GetNeighbors(Map map, Vector pos, bool allowJumps)
+    {
+        // 4-neighborhood with optional length-2 jumps
+        Vector[] steps = allowJumps
+            ? new Vector[] {
+                new(pos.X+1, pos.Y), new(pos.X-1, pos.Y), new(pos.X, pos.Y+1), new(pos.X, pos.Y-1),
+                new(pos.X+2, pos.Y), new(pos.X-2, pos.Y), new(pos.X, pos.Y+2), new(pos.X, pos.Y-2)
+              }
+            : new Vector[] {
+                new(pos.X+1, pos.Y), new(pos.X-1, pos.Y), new(pos.X, pos.Y+1), new(pos.X, pos.Y-1)
+              };
+
+        foreach (var n in steps)
+        {
+            if (n.X < 0 || n.Y < 0 || n.X >= map.Width || n.Y >= map.Height)
+                continue;
+
+            // Traversable cells only (same rule you already use)
+            var st = map[n];
+            if (st == CellState.Safe || st == CellState.Undiscovered || st == CellState.Reserved)
+                yield return n;
+        }
+    }
+
+    /// <summary>
+    /// Edge cost: 1 for length-1 steps, 2 for jumps (length-2).
+    /// </summary>
+    public static int MoveCost(Vector from, Vector to)
+    {
+        int dx = Math.Abs(to.X - from.X);
+        int dy = Math.Abs(to.Y - from.Y);
+        int manhattan = dx + dy;          // will be 1 or 2 in this movement model
+        return (manhattan == 2) ? 2 : 1;  // jump costs 2, step costs 1
+    }
+}
+
 /// <summary>
 /// Represents a 2D grid of cells for the game world, tracking each cell’s state (undiscovered,
 /// safe, trap, unreachable, or reserved). Supports dynamic resizing, cell state updates,
@@ -120,9 +163,39 @@ class Map
     /// </summary>
     /// <param name="point">The starting position for the search</param>
     /// <returns>The closest undiscovered cell, or null if all cells are discovered.</returns>
-    public Vector? PickClosestUndiscovered(Vector point)
+    public Vector? PickClosestUndiscovered(Vector point, bool allowJumps)
     {
-        var visited = new bool[Width, Height];
+        if (this[point] == CellState.Undiscovered)
+            return point;
+
+        // Dijkstra
+        var visited = new HashSet<Vector>();
+        var gScore = new Dictionary<Vector, int> { [point] = 0 };
+        var pq = new PriorityQueue<Vector, int>();
+        pq.Enqueue(point, 0);
+
+        while (pq.Count > 0)
+        {
+            var current = pq.Dequeue();
+            if (!visited.Add(current))
+                continue;
+
+            if (this[current] == CellState.Undiscovered)
+                return current; // first popped goal is truly closest by path cost
+
+            foreach (var n in NeighborUtils.GetNeighbors(this, current, allowJumps))
+            {
+                int tentative = gScore[current] + NeighborUtils.MoveCost(current, n);
+                if (!gScore.TryGetValue(n, out int old) || tentative < old)
+                {
+                    gScore[n] = tentative;
+                    pq.Enqueue(n, tentative);
+                }
+            }
+        }
+
+        // BFS
+        visited.Clear();
         var queue = new Queue<Vector>();
         queue.Enqueue(point);
 
@@ -131,10 +204,10 @@ class Map
             var current = queue.Dequeue();
             int x = current.X, y = current.Y;
 
-            if (x < 0 || y < 0 || x >= Width || y >= Height || visited[x, y])
+            if (x < 0 || y < 0 || x >= Width || y >= Height || visited.Contains(current))
                 continue;
 
-            visited[x, y] = true;
+            visited.Add(current);
 
             if (map[x, y] == CellState.Undiscovered)
                 return current;

@@ -216,7 +216,7 @@ class Agent
     /// </summary>
     Vector getClosestPos()
     {
-        Vector? vec = Map.PickClosestUndiscovered(Location);
+        Vector? vec = Map.PickClosestUndiscovered(Location, allowJumps);
         while (vec == null)
         {
             if (GrowMap((int)Config.MAP_GROW_SIZE_1D, (int)Config.MAP_GROW_SIZE_2D))
@@ -224,7 +224,7 @@ class Agent
                 NowhereToGo = true;
                 return new Vector(0, 0);
             }
-            vec = Map.PickClosestUndiscovered(Location);
+            vec = Map.PickClosestUndiscovered(Location, allowJumps);
         }
         return vec.Value;
     }
@@ -330,7 +330,7 @@ class Agent
 
             openSet.Remove(openSet.Min);
 
-            foreach (var neighbor in GetNeighbors(current))
+            foreach (var neighbor in NeighborUtils.GetNeighbors(Map, current, AllowJumps))
             {
                 float tentativeG = gScore[current] + 1;
                 if (gScore.TryGetValue(neighbor, out float g) && tentativeG >= g)
@@ -351,34 +351,6 @@ class Agent
     {
         // Manhattan distance
         return Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y);
-    }
-
-    IEnumerable<Vector> GetNeighbors(Vector pos)
-    {
-        int[] dx, dy;
-        if (AllowJumps)
-        {
-            dx = new int[] { 1, -1, 0, 0, 2, -2, 0, 0 };
-            dy = new int[] { 0, 0, 1, -1, 0, 0, 2, -2 };
-        }
-        else
-        {
-            dx = new int[] { 1, -1, 0, 0 };
-            dy = new int[] { 0, 0, 1, -1 };
-        }
-
-        for (int i = 0; i < dx.Length; i++)
-        {
-            int nx = pos.X + dx[i];
-            int ny = pos.Y + dy[i];
-
-            if (nx < 0 || ny < 0 || nx >= Map.Width || ny >= Map.Height)
-                continue;
-
-            // Only allow certain cells
-            if (new CellState[] { CellState.Safe, CellState.Undiscovered, CellState.Reserved }.Contains(Map[nx, ny]))
-                yield return new Vector(nx, ny);
-        }
     }
 
     Vector ReconstructFirstStep(Dictionary<Vector, Vector> cameFrom, Vector current, Vector start)
