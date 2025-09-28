@@ -39,7 +39,8 @@ jobs:
 
       - name: Pack NuGet package
         run: |
-          dotnet pack explorer-game/explorer-game.csproj -c Release -o nupkgs /p:PackageVersion=${{ github.ref_name#v }}
+          VERSION="${GITHUB_REF_NAME#v}"
+          dotnet pack explorer-game/explorer-game.csproj -c Release -o nupkgs /p:PackageVersion="$VERSION"
 
       - name: Publish NuGet
         env:
