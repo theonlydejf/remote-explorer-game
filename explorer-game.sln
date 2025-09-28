@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "explorer-game", "explorer-game\explorer-game.csproj", "{6A1B13BE-B310-42E0-93C7-2FE298AA2775}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "local-exec", "local-exec\local-exec.csproj", "{833682ED-598E-4C3B-BE2C-1C26F6492225}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lesson-exec", "lesson-exec\lesson-exec.csproj", "{60071A51-83E2-45A3-A69C-5EF102E51149}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01-simple", "examples\csharp\01-simple\example-simple.csproj", "{592F811F-4736-4DB1-9E0B-67BA6FAEE253}"
