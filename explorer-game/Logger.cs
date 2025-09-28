@@ -27,6 +27,8 @@ public class Logger
     // accumulated text exceeds contentWidth, these segments get wrapped into one or more full lines.
     private List<Segment> currentSegments;
     private int currentPartialLength; // total number of characters in currentSegments
+    private ConsoleColor backColor;
+    private ConsoleColor foreColor;
 
     // Represents a run of text with a single Foreground/Background pair.
     private class Segment
@@ -52,7 +54,8 @@ public class Logger
     /// <param name="height">Total height in rows, including the border.</param>
     /// <param name="borderFore">Foreground color for border characters.</param>
     /// <param name="borderBack">Background color for border characters.</param>
-    public Logger(int left, int top, int width, int height, ConsoleColor borderFore, ConsoleColor borderBack, object? sync = null)
+    public Logger(int left, int top, int width, int height, ConsoleColor borderFore, ConsoleColor borderBack,
+                  ConsoleColor foreColor = ConsoleColor.Black, ConsoleColor backColor = ConsoleColor.White, object? sync = null)
     {
         if (width < 4 || height < 3)
             throw new ArgumentException("Width must be >= 4 and height >= 3 to allow a visible content area.");
@@ -63,6 +66,8 @@ public class Logger
         totalHeight = height;
         this.borderFore = borderFore;
         this.borderBack = borderBack;
+        this.backColor = backColor;
+        this.foreColor = foreColor;
 
         contentWidth = totalWidth - 2;
         contentHeight = totalHeight - 2;
@@ -125,6 +130,7 @@ public class Logger
             ConsoleColor prevFore = Console.ForegroundColor;
             ConsoleColor prevBack = Console.BackgroundColor;
 
+            Console.BackgroundColor = backColor;
             for (int row = 0; row < contentHeight; row++)
             {
                 int y = topPosition + 1 + row;
@@ -155,6 +161,7 @@ public class Logger
         lock (syncRoot)
         {
             // 1) Clear interior
+            Console.BackgroundColor = backColor;
             for (int row = 0; row < contentHeight; row++)
             {
                 int y = topPosition + 1 + row;
@@ -192,11 +199,9 @@ public class Logger
                 }
 
                 // If the line is shorter than contentWidth, pad with spaces in default colors
+                Console.BackgroundColor = backColor;
                 if (printedSoFar < contentWidth)
-                {
-                    Console.ResetColor();
                     Console.Write(new string(' ', contentWidth - printedSoFar));
-                }
 
                 lineIndex++;
             }
@@ -284,10 +289,10 @@ public class Logger
     /// Thread-safe: acquires syncRoot.
     /// </summary>
     public void Write(string text)
-        => Write(text, Console.ForegroundColor, Console.BackgroundColor);
+        => Write(text, foreColor, backColor);
 
     public void Write(string text, ConsoleColor fore)
-        => Write(text, fore, Console.BackgroundColor);
+        => Write(text, fore, backColor);
 
     /// <summary>
     /// Writes text without a newline, using the specified colors.
@@ -319,10 +324,10 @@ public class Logger
     /// Thread-safe: acquires syncRoot.
     /// </summary>
     public void WriteLine(string text)
-        => WriteLine(text, Console.ForegroundColor, Console.BackgroundColor);
+        => WriteLine(text, foreColor, backColor);
 
     public void WriteLine(string text, ConsoleColor fore)
-        => WriteLine(text, fore, Console.BackgroundColor);
+        => WriteLine(text, fore, backColor);
 
     /// <summary>
     /// Writes text plus newline, using specified colors. Any pending segments (from previous Write calls)

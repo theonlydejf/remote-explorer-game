@@ -84,7 +84,8 @@ public partial class Program
 
             try
             {
-                logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4, ConsoleColor.White, Console.BackgroundColor, ConsoleSync.sync);
+                logger = new Logger(1, testWorldMap.GetLength(1) + 3, Console.WindowWidth - 3, Console.WindowHeight - testWorldMap.GetLength(1) - 4,
+                                    Console.ForegroundColor, Console.BackgroundColor, Console.ForegroundColor, Console.BackgroundColor, ConsoleSync.sync);
                 if (!winTooSmall)
                     break;
             }
@@ -197,7 +198,7 @@ public partial class Program
                 Console.Write(new string(' ', maxLen - MAX_EXPECTED_POSTFIX_LEN - world.Name.Length));
                 Console.WriteLine(
                     $" on {world.Port}: {(world.connectionHandler?.SessionCount)?.ToString() ?? "ERR"} agents"
-                    .PadRight(MAX_EXPECTED_POSTFIX_LEN)
+                    .PadRight(MAX_EXPECTED_POSTFIX_LEN - 1)
                 );
             }
 
@@ -233,10 +234,10 @@ class SessionConnectedLogger
     {
         lock (ConsoleSync.sync)
         {
-            logger.Write("[", ConsoleColor.White);
+            logger.Write("[");
             logger.Write(e.ClientUsername, ConsoleColor.Yellow);
             logger.Write(" @" + e.ClientID, ConsoleColor.DarkGray);
-            logger.Write("] ", ConsoleColor.White);
+            logger.Write("] ");
             if (!e.Response.Value<bool>("success"))
             {
                 logger.Write("Agent connection failed (", ConsoleColor.Red);
@@ -246,14 +247,14 @@ class SessionConnectedLogger
             }
 
             
-            logger.Write("Connected ", ConsoleColor.White);
+            logger.Write("Connected ");
             if (e.SessionIdentifier != null && e.SessionIdentifier.HasVSID)
             {
-                logger.Write("with '", ConsoleColor.White);
+                logger.Write("with '");
                 logger.Write(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
-                logger.Write("' ", ConsoleColor.White);
+                logger.Write("' ");
             }
-            logger.Write("into ", ConsoleColor.White);
+            logger.Write("into ");
             logger.WriteLine(world, worldColor);
 
             if (e.GameSession == null)
@@ -287,12 +288,12 @@ class AgentDiedLogger
     {
         lock (ConsoleSync.sync)
         {
-            logger.Write("[", ConsoleColor.White);
+            logger.Write("[");
             logger.Write(sessionArgs.ClientUsername, ConsoleColor.Yellow);
             logger.Write(" @" + sessionArgs.ClientID, ConsoleColor.DarkGray);
-            logger.Write("] Died in '", ConsoleColor.White);
+            logger.Write("] Died in '");
             logger.Write(world, worldColor);
-            logger.WriteLine($"' (reason: '{e.DeathReason}')", ConsoleColor.White);
+            logger.WriteLine($"' (reason: '{e.DeathReason}')");
         }
     }
 }
