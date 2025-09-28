@@ -40,6 +40,16 @@ public class SessionConnectedEventArgs : EventArgs
     /// </summary>
     public JObject Response { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SessionConnectedEventArgs"/> class
+    /// with the specified client information, session identifier, optional local session,
+    /// and response payload.
+    /// </summary>
+    /// <param name="clientUsername">The sanitized username provided by the client.</param>
+    /// <param name="clientID">The network identifier of the client (usually IP:port).</param>
+    /// <param name="sessionIdentifier">The session identifier assigned to the client.</param>
+    /// <param name="session">The local game session created for the client, if any.</param>
+    /// <param name="response">The JSON response returned to the client.</param>
     public SessionConnectedEventArgs(string clientUsername, string clientID, SessionIdentifier? sessionIdentifier, LocalGameSession? session, JObject response)
     {
         ClientUsername = clientUsername;

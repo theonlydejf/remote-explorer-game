@@ -32,6 +32,9 @@ public interface IGameSession
 /// </summary>
 public struct Vector
 {
+    /// <summary>
+    /// A zero vector at coordinates (0, 0).
+    /// </summary>
     public static readonly Vector Zero = new (0, 0);
 
     /// <summary>
@@ -44,14 +47,29 @@ public struct Vector
     /// </summary>
     public int Y { get; set; }
 
+    /// <summary>
+    /// Initializes a new <see cref="Vector"/> with the specified coordinates.
+    /// </summary>
+    /// <param name="x">The X-coordinate.</param>
+    /// <param name="y">The Y-coordinate.</param>
     public Vector(int x, int y)
     {
         X = x;
         Y = y;
     }
 
+    /// <summary>
+    /// Returns a string representation of the vector in the form <c>(X, Y)</c>.
+    /// </summary>
+    /// <returns>A string describing this vector.</returns>
     public readonly override string ToString() => $"({X}, {Y})";
 
+    /// <summary>
+    /// Determines whether this instance and a specified object, which must also be a <see cref="Vector"/>,
+    /// have the same coordinates.
+    /// </summary>
+    /// <param name="obj">The object to compare with the current instance.</param>
+    /// <returns><c>true</c> if the objects are equal; otherwise, <c>false</c>.</returns>
     public readonly override bool Equals(object? obj)
     {
         if (obj is Vector other)
@@ -59,11 +77,34 @@ public struct Vector
         return false;
     }
 
+    /// <summary>
+    /// Returns a hash code for this vector.
+    /// </summary>
+    /// <returns>A 32-bit signed integer hash code.</returns>
     public readonly override int GetHashCode() => HashCode.Combine(X, Y);
 
+    /// <summary>
+    /// Adds two vectors component-wise.
+    /// </summary>
+    /// <param name="a">The first vector.</param>
+    /// <param name="b">The second vector.</param>
+    /// <returns>The vector sum <c>(a.X + b.X, a.Y + b.Y)</c>.</returns>
     public static Vector operator +(Vector a, Vector b) => new Vector(a.X + b.X, a.Y + b.Y);
+
+    /// <summary>
+    /// Subtracts vector <paramref name="b"/> from vector <paramref name="a"/> component-wise.
+    /// </summary>
+    /// <param name="a">The minuend vector.</param>
+    /// <param name="b">The subtrahend vector.</param>
+    /// <returns>The vector difference <c>(a.X - b.X, a.Y - b.Y)</c>.</returns>
     public static Vector operator -(Vector a, Vector b) => new Vector(a.X - b.X, a.Y - b.Y);
 
+    /// <summary>
+    /// Determines whether two nullable vectors are equal.
+    /// </summary>
+    /// <param name="a">The first vector, or <c>null</c>.</param>
+    /// <param name="b">The second vector, or <c>null</c>.</param>
+    /// <returns><c>true</c> if both are <c>null</c> or have equal coordinates; otherwise, <c>false</c>.</returns>
     public static bool operator ==(Vector? a, Vector? b)
     {
         if (a is null && b is null) return true;
@@ -71,8 +112,28 @@ public struct Vector
         return a.Equals(b);
     }
 
+    /// <summary>
+    /// Determines whether two vectors are equal (same coordinates).
+    /// </summary>
+    /// <param name="a">The first vector.</param>
+    /// <param name="b">The second vector.</param>
+    /// <returns><c>true</c> if <paramref name="a"/> and <paramref name="b"/> are equal; otherwise, <c>false</c>.</returns>
     public static bool operator ==(Vector a, Vector b) => a.X == b.X && a.Y == b.Y;
+
+    /// <summary>
+    /// Determines whether two vectors are not equal.
+    /// </summary>
+    /// <param name="a">The first vector.</param>
+    /// <param name="b">The second vector.</param>
+    /// <returns><c>true</c> if the vectors differ; otherwise, <c>false</c>.</returns>
     public static bool operator !=(Vector a, Vector b) => !(a == b);
+
+    /// <summary>
+    /// Determines whether two nullable vectors are not equal.
+    /// </summary>
+    /// <param name="a">The first vector, or <c>null</c>.</param>
+    /// <param name="b">The second vector, or <c>null</c>.</param>
+    /// <returns><c>true</c> if they are not both <c>null</c> and not equal; otherwise, <c>false</c>.</returns>
     public static bool operator !=(Vector? a, Vector? b) => !(a == b);
 }
 
@@ -85,6 +146,10 @@ public struct Tile
     private char left;
     private char right;
 
+    /// <summary>
+    /// Gets or sets the left character of the two-character tile.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the value is not an allowed character.</exception>
     public char Left
     {
         get => left;
@@ -96,6 +161,10 @@ public struct Tile
         }
     }
 
+    /// <summary>
+    /// Gets or sets the right character of the two-character tile.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the value is not an allowed character.</exception>
     public char Right
     {
         get => right;
@@ -107,6 +176,12 @@ public struct Tile
         }
     }
 
+    /// <summary>
+    /// Initializes a new <see cref="Tile"/> with the specified left and right characters.
+    /// </summary>
+    /// <param name="left">The left character.</param>
+    /// <param name="right">The right character.</param>
+    /// <exception cref="ArgumentException">Thrown when either character is not allowed.</exception>
     public Tile(char left, char right)
     {
         if (!IsGoodChar(left))
@@ -139,8 +214,18 @@ public struct Tile
     /// </summary>
     public static implicit operator Tile(string str) => new Tile(str);
 
+    /// <summary>
+    /// Returns the two-character string that represents this tile.
+    /// </summary>
+    /// <returns>A two-character string.</returns>
     public override string ToString() => $"{Left}{Right}";
 
+    /// <summary>
+    /// Determines whether this instance and a specified object, which must also be a <see cref="Tile"/>,
+    /// have the same left and right characters.
+    /// </summary>
+    /// <param name="obj">The object to compare with the current instance.</param>
+    /// <returns><c>true</c> if the tiles are equal; otherwise, <c>false</c>.</returns>
     public override bool Equals(object? obj)
     {
         if (obj is Tile other)
@@ -148,11 +233,33 @@ public struct Tile
         return false;
     }
 
+    /// <summary>
+    /// Returns a hash code for this tile.
+    /// </summary>
+    /// <returns>A 32-bit signed integer hash code.</returns>
     public override int GetHashCode() => HashCode.Combine(Left, Right);
 
+    /// <summary>
+    /// Determines whether two tiles are the same.
+    /// </summary>
+    /// <param name="a">The first tile.</param>
+    /// <param name="b">The second tile.</param>
+    /// <returns><c>true</c> if equal; otherwise, <c>false</c>.</returns>
     public static bool operator ==(Tile a, Tile b) => a.Left == b.Left && a.Right == b.Right;
+
+    /// <summary>
+    /// Determines whether two tiles differ.
+    /// </summary>
+    /// <param name="a">The first tile.</param>
+    /// <param name="b">The second tile.</param>
+    /// <returns><c>true</c> if not equal; otherwise, <c>false</c>.</returns>
     public static bool operator !=(Tile a, Tile b) => !(a == b);
 
+    /// <summary>
+    /// Serializes a nullable <see cref="Tile"/> to a <see cref="JObject"/>.
+    /// </summary>
+    /// <param name="tile">The tile to serialize, or <c>null</c>.</param>
+    /// <returns>A <see cref="JObject"/> with the tile data, or <c>null</c> if <paramref name="tile"/> is <c>null</c>.</returns>
     public static JObject? Serialize(Tile? tile)
     {
         if (!tile.HasValue)
@@ -163,6 +270,12 @@ public struct Tile
         };
     }
 
+    /// <summary>
+    /// Deserializes a <see cref="Tile"/> from a <see cref="JObject"/>.
+    /// </summary>
+    /// <param name="jobj">The JSON object to read from, or <c>null</c>.</param>
+    /// <returns>The deserialized tile, or <c>null</c> if <paramref name="jobj"/> is <c>null</c>.</returns>
+    /// <exception cref="ArgumentException">Thrown when the JSON object does not contain the required <c>str</c> value.</exception>
     public static Tile? Deserialize(JObject? jobj)
     {
         if (jobj == null)
@@ -233,6 +346,12 @@ public class AsyncMovementResult
     /// </summary>
     public Task ResponseHandlerTask { get; internal set; } = Task.CompletedTask;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AsyncMovementResult"/> class.
+    /// </summary>
+    /// <param name="ready"><c>true</c> if the result is already available.</param>
+    /// <param name="movementResult">The movement result, if available.</param>
+    /// <param name="responseHandlerTask">An optional task that handles the response workflow.</param>
     public AsyncMovementResult(bool ready = false, MovementResult? movementResult = null, Task? responseHandlerTask = null)
     {
         Ready = ready;
@@ -257,8 +376,17 @@ public struct MovementResult
     /// </summary>
     public bool IsAgentAlive { get; set; }
 
+    /// <summary>
+    /// Gets or sets the tile discovered as a consequence of the movement, if any.
+    /// </summary>
     public Tile? DiscoveredTile { get; set; }
 
+    /// <summary>
+    /// Initializes a new <see cref="MovementResult"/> with the specified values.
+    /// </summary>
+    /// <param name="movedSuccessfully"><c>true</c> if the move was valid and executed.</param>
+    /// <param name="isAgentAlive"><c>true</c> if the agent is still alive after the move.</param>
+    /// <param name="discoveredTile">The tile discovered by the move, if any.</param>
     public MovementResult(bool movedSuccessfully, bool isAgentAlive, Tile? discoveredTile)
     {
         MovedSuccessfully = movedSuccessfully;

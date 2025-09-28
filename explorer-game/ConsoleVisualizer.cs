@@ -21,10 +21,10 @@ public class ConsoleVisualizer
     /// </summary>
     private Dictionary<LocalGameSession, VisualSessionIdentifier> gameSessions = new();
 
+    private Vector windowLocation;
     /// <summary>
     /// Top-left coordinate of the visualization window in the console.
     /// </summary>
-    private Vector windowLocation;
     public Vector WindowLocation
     {
         get => windowLocation;
