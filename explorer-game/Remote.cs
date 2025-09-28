@@ -14,7 +14,7 @@ using ExplorerGame.ConsoleVisualizer;
 /// </summary>
 public class RemoteGameSession : IGameSession
 {
-    private readonly string sessionId;
+    private readonly string sid;
     private readonly string serverUrl;
     private readonly HttpClient httpClient = new();
 
@@ -27,11 +27,11 @@ public class RemoteGameSession : IGameSession
     /// Creates a new remote game session associated with a server and session ID.
     /// </summary>
     /// <param name="serverUrl">Base URL of the server.</param>
-    /// <param name="sessionId">Unique session identifier assigned by the server.</param>
-    public RemoteGameSession(string serverUrl, string sessionId)
+    /// <param name="sid">Unique session identifier assigned by the server.</param>
+    public RemoteGameSession(string serverUrl, string sid)
     {
         this.serverUrl = serverUrl.TrimEnd('/');
-        this.sessionId = sessionId;
+        this.sid = sid;
     }
 
     /// <inheritdoc/>
@@ -44,7 +44,7 @@ public class RemoteGameSession : IGameSession
     /// Remote session does not expose discovered tiles directly.
     /// TODO implement
     /// </summary>
-    public Tile? DiscoveredTile => throw new NotImplementedException();
+    public Tile? DiscoveredTile { get; private set; } = null;
 
     /// <summary>
     /// Sends a synchronous move request to the server and processes the result.
@@ -55,11 +55,11 @@ public class RemoteGameSession : IGameSession
     /// <returns>The movement result as reported by the server.</returns>
     public MovementResult Move(Vector move)
     {
-        var request = new
+        JObject request = new JObject()
         {
-            sessionId,
-            dx = move.X,
-            dy = move.Y
+            ["sid"] = sid,
+            ["dx"] = move.X,
+            ["dy"] = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -79,11 +79,11 @@ public class RemoteGameSession : IGameSession
     /// </returns>
     public AsyncMovementResult MoveAsync(Vector move)
     {
-        var request = new
+        JObject request = new JObject()
         {
-            sessionId,
-            dx = move.X,
-            dy = move.Y
+            ["sid"] = sid,
+            ["dx"] = move.X,
+            ["dy"] = move.Y
         };
 
         var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
@@ -116,14 +116,19 @@ public class RemoteGameSession : IGameSession
         else
             LastResponseMessage = null;
 
+        Tile? discoveredTile = null;
+        if (result.ContainsKey("discovered"))
+            discoveredTile = Tile.Deserialize(result.Value<JObject>("discovered"));
+
         if (!result.Value<bool>("success"))
         {
             IsAgentAlive = false;
-            return new MovementResult(false, IsAgentAlive);
+            return new MovementResult(false, IsAgentAlive, discoveredTile);
         }
 
+        DiscoveredTile = discoveredTile;
         IsAgentAlive = result.Value<bool>("alive");
-        return new MovementResult(result.Value<bool>("moved"), IsAgentAlive);
+        return new MovementResult(result.Value<bool>("moved"), IsAgentAlive, discoveredTile);
     }
 }
 
@@ -156,12 +161,16 @@ public class RemoteGameSessionFactory
     /// <exception cref="Exception">
     /// Thrown if the server rejects the connection or returns invalid data.
     /// </exception>
-    public RemoteGameSession Create(SessionIdentifier identifier)
+    public RemoteGameSession Create(SessionIdentifier? identifier)
     {
-        JObject request = new JObject()
+        JObject? vsid = identifier == null ? null : new JObject
         {
-            ["identifier"] = identifier.Identifier,
+            ["identifierStr"] = identifier.IdentifierStr,
             ["color"] = identifier.Color.ToString(),
+        };
+        JObject request = new JObject
+        {
+            ["vsid"] = vsid,
             ["username"] = username
         };
 
@@ -173,7 +182,7 @@ public class RemoteGameSessionFactory
         if (!obj.Value<bool>("success"))
             throw new Exception(obj["message"]?.ToString() ?? "Unknown error");
 
-        var uuid = obj.Value<string>("uuid") ?? throw new Exception("Invalid response from server");
+        var uuid = obj.Value<string>("sid") ?? throw new Exception("Invalid response from server");
         return new RemoteGameSession(serverUrl, uuid);
     }
 }

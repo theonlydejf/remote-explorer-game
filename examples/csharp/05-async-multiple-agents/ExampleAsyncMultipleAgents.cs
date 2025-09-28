@@ -65,11 +65,13 @@ namespace ExampleAsyncMultipleAgents
                 // Go through all agents
                 for (int i = 0; i < results.Length; i++)
                 {
+                    AsyncMovementResult resultHandle = results[i];
+
                     // Check if the current move is finished
-                    if (results[i].Ready)
+                    if (resultHandle.Ready)
                     {
                         // If the agent died, create a new one
-                        if (!results[i].MovementResult.Value.IsAgentAlive)
+                        if (!resultHandle.MovementResult.Value.IsAgentAlive)
                             sessions[i] = factory.Create(new SessionIdentifier("[" + i, ConsoleColor.Magenta));
 
                         // Start a new random move for this agent

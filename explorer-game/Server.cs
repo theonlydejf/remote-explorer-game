@@ -26,7 +26,7 @@ public class SessionConnectedEventArgs : EventArgs
     public string ClientID { get; set; }
 
     /// <summary>
-    /// Identifier used to render this session
+    /// Identifier used for this session
     /// </summary>
     public SessionIdentifier? SessionIdentifier { get; set; }
 
@@ -40,6 +40,16 @@ public class SessionConnectedEventArgs : EventArgs
     /// </summary>
     public JObject Response { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SessionConnectedEventArgs"/> class
+    /// with the specified client information, session identifier, optional local session,
+    /// and response payload.
+    /// </summary>
+    /// <param name="clientUsername">The sanitized username provided by the client.</param>
+    /// <param name="clientID">The network identifier of the client (usually IP:port).</param>
+    /// <param name="sessionIdentifier">The session identifier assigned to the client.</param>
+    /// <param name="session">The local game session created for the client, if any.</param>
+    /// <param name="response">The JSON response returned to the client.</param>
     public SessionConnectedEventArgs(string clientUsername, string clientID, SessionIdentifier? sessionIdentifier, LocalGameSession? session, JObject response)
     {
         ClientUsername = clientUsername;
@@ -64,6 +74,11 @@ public class ConnectionHandler
     /// Per-client list of session IDs.
     /// </summary>
     private readonly Dictionary<string, List<string>> clientSessions = new();
+
+    /// <summary>
+    /// Number of active sessions
+    /// </summary>
+    public int SessionCount => sessionsById.Count;
 
     /// <summary>
     /// Global map of sessionId -> session wrapper.
@@ -130,13 +145,13 @@ public class ConnectionHandler
                 args["clientId"] = clientID;
 
                 // If sessionId is missing or unknown, route to HandleCommand directly.
-                if (!args.ContainsKey("sessionId"))
+                if (!args.ContainsKey("sid"))
                 {
                     await SendResponse(HandleCommand(args, context), context);
                 }
                 else
                 {
-                    string? sessionId = args.Value<string>("sessionId");
+                    string? sessionId = args.Value<string>("sid");
                     if (sessionId == null || !sessionsById.TryGetValue(sessionId, out SessionWrapper? session) || session == null)
                     {
                         await SendResponse(HandleCommand(args, context), context);
@@ -225,7 +240,7 @@ public class ConnectionHandler
 
                 SessionWrapper? session = null;
                 if (response.Value<bool>("success"))
-                    session = sessionsById[response.Value<string>("uuid") ?? throw new Exception("Missing uuid in response")];
+                    session = sessionsById[response.Value<string>("sid") ?? throw new Exception("Missing 'sid' in response")];
 
                 string username = args.Value<string>("username")?.Trim() ?? "unknown";
                 username = Regex.Replace(username, @"\s+", " ");   // collapse whitespace
@@ -261,37 +276,48 @@ public class ConnectionHandler
     private (JObject, string? sessionId) HandleConnect(JObject args)
     {
         string clientId = args.Value<string>("clientId")!;
-        string identifier = args.Value<string>("identifier")!;
-        identifier = Regex.Replace(identifier, @"\s+", " ");
-        identifier = Regex.Replace(identifier, @"\p{C}", "");
+        JObject? vsid = args.Value<JObject>("vsid");
+        if (visualizer != null && vsid == null)
+            return (new JObject { ["success"] = false, ["message"] = "This server requieres VSID to connect. None present." }, null);
 
-        ConsoleColor color = Enum.Parse<ConsoleColor>(args.Value<string>("color")!);
+        ConsoleColor? color = vsid == null ? null : Enum.Parse<ConsoleColor>(vsid.Value<string>("color")!);
+        string? identifier = vsid?.Value<string>("identifierStr")!;
+        if (vsid != null)
+        {
+            identifier = Regex.Replace(identifier, @"\s+", " ");
+            identifier = Regex.Replace(identifier, @"\p{C}", "");
+        }
 
         lock (sync)
         {
             // Prevent identical identifier/color collisions across sessions.
-            if (sessionsById.Values.Any(id => id.SessionIdentifier.Identifier == identifier && id.SessionIdentifier.Color == color))
+            if (vsid != null && sessionsById.Values.Any(id => id.SessionIdentifier.IdentifierStr == identifier && id.SessionIdentifier.Color == color))
                 return (new JObject { ["success"] = false, ["message"] = "Identifier already in use" }, null);
 
             if (!clientSessions.ContainsKey(clientId))
                 clientSessions[clientId] = new();
 
             // Limit sessions per client to avoid abuse.
-            if (clientSessions[clientId].Count >= 5)
+            if (clientSessions[clientId].Count >= 20)
                 return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);
             session.AgentDied += AgentDied;
 
-            string sessionId = Guid.NewGuid().ToString();
-            var sid = new SessionIdentifier(identifier, color, map);
+            string uuid = Guid.NewGuid().ToString();
+            SessionIdentifier sid = new SessionIdentifier
+            (
+                vsid == null ? null : new VisualSessionIdentifier(identifier, color!.Value, map),
+                uuid
+            );
 
-            sessionsById[sessionId] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
-            clientSessions[clientId].Add(sessionId);
+            sessionsById[uuid] = new SessionWrapper(clientId, session, sid, DateTime.UtcNow);
+            clientSessions[clientId].Add(uuid);
 
-            visualizer?.AttachGameSession(session, sid);
+            if(visualizer != null)
+                visualizer.AttachGameSession(session, sid.VSID!);
 
-            return (new JObject { ["success"] = true, ["uuid"] = sessionId }, sessionId);
+            return (new JObject { ["success"] = true, ["sid"] = uuid }, uuid);
         }
     }
 
@@ -324,16 +350,16 @@ public class ConnectionHandler
     /// </summary>
     private (JObject, string? sessionId) HandleMove(JObject request)
     {
-        string sessionId = request.Value<string>("sessionId")!;
+        string sessionId = request.Value<string>("sid")!;
         int dx = request.Value<int>("dx");
         int dy = request.Value<int>("dy");
 
         lock (sync)
         {
             if (!sessionsById.TryGetValue(sessionId, out var session))
-                return (new JObject { ["success"] = false, ["message"] = "Unknown sessionId" }, null);
+                return (new JObject { ["success"] = false, ["message"] = "No living agent with requested session ID" }, null);
 
-            var result = session.Session.Move(new Vector(dx, dy));
+            MovementResult result = session.Session.Move(new Vector(dx, dy));
             if (result.IsAgentAlive && result.MovedSuccessfully)
                 UpdateActivity(sessionId);
 
@@ -343,7 +369,8 @@ public class ConnectionHandler
                 {
                     ["success"] = true,
                     ["moved"] = result.MovedSuccessfully,
-                    ["alive"] = result.IsAgentAlive
+                    ["alive"] = result.IsAgentAlive,
+                    ["discovered"] = Tile.Serialize(result.DiscoveredTile)
                 },
                 sessionId
             );

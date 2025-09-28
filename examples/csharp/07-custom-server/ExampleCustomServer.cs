@@ -35,7 +35,9 @@ class Program
         // Create a logger below the map (with a 2-line gap for the frame => map_height + gap)
         int loggerTop = 5 + 2; 
         Logger logger = new Logger(1, loggerTop, Console.WindowWidth - 2, 10, 
-                                   ConsoleColor.White, Console.BackgroundColor, syncObject);
+                                   ConsoleColor.White, Console.BackgroundColor,
+                                   Console.ForegroundColor, Console.BackgroundColor,
+                                   syncObject);
 
         // Create a visualizer for the map and attach the map to it
         ConsoleVisualizer viz = new ConsoleVisualizer(new Vector(1, 0), syncObject);
@@ -53,8 +55,8 @@ class Program
                 logger.Write("[", ConsoleColor.White);
                 logger.Write(e.ClientUsername, ConsoleColor.Yellow);
                 logger.Write("] connected with ID ", ConsoleColor.White);
-                if (e.SessionIdentifier != null)
-                    logger.WriteLine(e.SessionIdentifier.Identifier, e.SessionIdentifier.Color);
+                if (e.SessionIdentifier != null && e.SessionIdentifier.HasVSID)
+                    logger.WriteLine(e.SessionIdentifier.IdentifierStr, e.SessionIdentifier.Color.Value);
                 else
                     logger.WriteLine("(unknown ID)", ConsoleColor.Red);
             }

@@ -12,6 +12,11 @@ public class AgentDiedEventArgs : EventArgs
     /// </summary>
     public string DeathReason { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AgentDiedEventArgs"/> class
+    /// with the specified reason.
+    /// </summary>
+    /// <param name="reason">The reason why the agent died.</param>
     public AgentDiedEventArgs(string reason)
     {
         DeathReason = reason;
@@ -34,6 +39,12 @@ public class AgentMovementEventArgs : EventArgs
     /// </summary>
     public Vector AgentPreviousLocation { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AgentMovementEventArgs"/> class
+    /// with the specified current and previous locations.
+    /// </summary>
+    /// <param name="agentCurrentLocation">The agent's location after moving.</param>
+    /// <param name="agentPreviousLocation">The agent's location before moving.</param>
     public AgentMovementEventArgs(Vector agentCurrentLocation, Vector agentPreviousLocation)
     {
         AgentCurrentLocation = agentCurrentLocation;
@@ -161,12 +172,17 @@ public class LocalGameSession : IGameSession
     public MovementResult Move(Vector move)
     {
         if (!IsAgentAlive)
-            return new MovementResult(false, false);
+            return new MovementResult(false, false, null);
 
         if (!VALID_MOVES.Contains(move))
-            return new MovementResult(false, true);
+            return new MovementResult(false, true, null);
 
-        return new MovementResult(true, Translate(move));
+        bool survivedMove = Translate(move);
+        Tile? discovered = null;
+        if (AgentLocation.X >= 0 && AgentLocation.Y >= 0 &&
+           AgentLocation.X < map.GetLength(0) && AgentLocation.Y < map.GetLength(1))
+            discovered = map[AgentLocation.X, AgentLocation.Y];
+        return new MovementResult(true, survivedMove, discovered);
     }
 
     /// <summary>

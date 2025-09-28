@@ -19,18 +19,32 @@ public class ConsoleVisualizer
     /// <summary>
     /// Maps each game session to its identifier for display (color + symbol).
     /// </summary>
-    private Dictionary<LocalGameSession, SessionIdentifier> gameSessions = new();
+    private Dictionary<LocalGameSession, VisualSessionIdentifier> gameSessions = new();
 
+    private Vector windowLocation;
     /// <summary>
     /// Top-left coordinate of the visualization window in the console.
     /// </summary>
-    private Vector windowLocation;
+    public Vector WindowLocation
+    {
+        get => windowLocation;
+        set
+        {
+            if (windowLocation == value)
+                return;
+
+            ClearArea();
+            windowLocation = value;
+            PrintBorder();
+            UpdateWindow();
+        }
+    }
 
     /// <summary>
     /// Offseted top-left coordinate inside the border where actual map content begins.
     /// (Because of drawn border, origin is windowLocation + (1,1).)
     /// </summary>
-    private Vector origin;
+    private Vector origin => WindowLocation + new Vector(1, 1);
 
     /// <summary>
     /// Synchronization lock for writing to the console.
@@ -50,7 +64,6 @@ public class ConsoleVisualizer
     public ConsoleVisualizer(Vector windowLocation, object? consoleLock = null)
     {
         this.windowLocation = windowLocation;
-        origin = windowLocation + new Vector(1, 1);
         this.consoleLock = consoleLock ?? new object();
 
         // Draw border immediately so the user sees a placeholder box,
@@ -62,13 +75,13 @@ public class ConsoleVisualizer
     /// <summary>
     /// Convenience overload for attaching a game session at the default agent location (0,0).
     /// </summary>
-    public bool AttachGameSession(LocalGameSession gameSession, SessionIdentifier identifier) =>
+    public bool AttachGameSession(LocalGameSession gameSession, VisualSessionIdentifier identifier) =>
         AttachGameSession(gameSession, identifier, Vector.Zero);
 
     /// <summary>
     /// Attaches a game session with its display identifier, tracking the agent's location.
     /// </summary>
-    public bool AttachGameSession(LocalGameSession gameSession, SessionIdentifier identifier, Vector agentLocation)
+    public bool AttachGameSession(LocalGameSession gameSession, VisualSessionIdentifier identifier, Vector agentLocation)
     {
         // A visualizer is designed for exactly one map layout.
         if (map != null && !map.Equals(gameSession.map))
@@ -182,7 +195,7 @@ public class ConsoleVisualizer
 
         // Count how many agents occupy this tile.
         int agentCnt = 0;
-        SessionIdentifier id = SessionIdentifier.ERROR_IDENTIFIER;
+        VisualSessionIdentifier id = VisualSessionIdentifier.ERROR_IDENTIFIER;
         foreach (var keyVal in gameSessions)
         {
             if (keyVal.Key.AgentLocation == loc)
@@ -199,7 +212,7 @@ public class ConsoleVisualizer
             if (agentCnt > 1)
             {
                 // Multiple agents in one tile -> display their count instead of identifiers.
-                Console.ForegroundColor = SessionIdentifier.SESSION_COUNTER_COLOR;
+                Console.ForegroundColor = VisualSessionIdentifier.SESSION_COUNTER_COLOR;
 
                 // If absurdly many agents, fallback to "Hi" as a placeholder.
                 if (agentCnt > 99)
@@ -213,7 +226,7 @@ public class ConsoleVisualizer
             {
                 // One agent -> show its identifier in its assigned color.
                 Console.ForegroundColor = id.Color;
-                Console.Write(id.Identifier);
+                Console.Write(id.IdentifierStr);
                 return;
             }
 
@@ -240,20 +253,20 @@ public class ConsoleVisualizer
             Console.ResetColor();
 
             // Top border
-            Console.SetCursorPosition(windowLocation.X, windowLocation.Y);
+            Console.SetCursorPosition(WindowLocation.X, WindowLocation.Y);
             Console.Write($"┌{new string('─', w * 2)}┐");
 
             // Vertical sides
             for (int y = 0; y < h; y++)
             {
-                Console.SetCursorPosition(windowLocation.X, windowLocation.Y + y + 1);
+                Console.SetCursorPosition(WindowLocation.X, WindowLocation.Y + y + 1);
                 Console.Write('│');
-                Console.SetCursorPosition(windowLocation.X + w * 2 + 1, windowLocation.Y + y + 1);
+                Console.SetCursorPosition(WindowLocation.X + w * 2 + 1, WindowLocation.Y + y + 1);
                 Console.Write('│');
             }
 
             // Bottom border
-            Console.SetCursorPosition(windowLocation.X, windowLocation.Y + h + 1);
+            Console.SetCursorPosition(WindowLocation.X, WindowLocation.Y + h + 1);
             Console.Write($"└{new string('─', w * 2)}┘");
         }
     }
@@ -267,5 +280,25 @@ public class ConsoleVisualizer
         Console.SetCursorPosition(origin.X, origin.Y);
         Console.Write(" No map");
         Console.ResetColor();
+    }
+
+    /// <summary>
+    /// Clears the visualization area inside the border (map area).
+    /// Useful for resetting the display before redrawing.
+    /// </summary>
+    private void ClearArea()
+    {
+        int w = (map?.GetLength(0) * 2 ?? EMPTY_WINDOW_SIZE.X) + 2;
+        int h = (map?.GetLength(1) ?? EMPTY_WINDOW_SIZE.Y) + 2;
+
+        lock (consoleLock)
+        {
+            Console.ResetColor();
+            for (int y = 0; y < h; y++)
+            {
+                Console.SetCursorPosition(WindowLocation.X, WindowLocation.Y + y);
+                Console.Write(new string(' ', w));
+            }
+        }
     }
 }

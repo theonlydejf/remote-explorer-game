@@ -45,7 +45,7 @@ namespace ExampleFeedback
             // result = session.Move(new Vector(6, -9)); // Uncomment me to try me out
 
             // Agent hits a wall => successful move but does not survive
-            result = session.Move(new Vector(0, -1)); // Uncomment me to try me out
+            // result = session.Move(new Vector(0, -1)); // Uncomment me to try me out
 
             if (result.IsAgentAlive) // Check if the agent survived the move
             {
@@ -67,9 +67,26 @@ namespace ExampleFeedback
                 Console.WriteLine("Move was not successful");
             }
 
+            // Each movement discovers a tile from the map.
+            // Tile is null if the the tile is empty, when the agent wandered out of them
+            // or if the movement was not successful
+            Tile? discoveredTile = result.DiscoveredTile;
+
+            if (discoveredTile.HasValue)
+            {
+                // Print the text representation of the tile
+                Console.WriteLine("Discovered tile: " + discoveredTile.ToString());
+            }
+
+            // Session keeps track of last discovered tile (similar to session.IsAgentAlive)
+            if (session.DiscoveredTile.HasValue)
+            {
+                Console.WriteLine("Discovered tile: " + session.DiscoveredTile.ToString());
+            }
+
             /////////// ADVANCED ///////////
 
-            Console.WriteLine("Waiting...");
+                Console.WriteLine("Waiting...");
             Thread.Sleep(6100); // Wait until the server kicks the agent for inactivity
             MovementResult kickedMoveResult = session.Move(new Vector(1, 0));
             Console.WriteLine($"Alive: {kickedMoveResult.IsAgentAlive}, Move was successful: {kickedMoveResult.MovedSuccessfully}");

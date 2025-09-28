@@ -75,10 +75,21 @@ mkdir -p "$EXPLORER_BIN" "$PKG"
 echo "⚙️ Building explorer-game (Release)..."
 dotnet build explorer-game/explorer-game.csproj -c Release -o "$EXPLORER_BIN"
 
-echo "📦 Packaging explorer-game DLLs into lib-${SUFFIX}.zip..."
+echo "🐍 Building Python wheel (pyproject.toml in repo root)…"
+if [[ -f "pyproject.toml" ]]; then
+  python -m build --wheel --outdir "$PKG" .
+  # Place the wheel next to the DLLs so it’s zipped together with them
+  cp "$PKG"/*.whl "$EXPLORER_BIN"/
+else
+  echo "⚠️  No pyproject.toml in repo root — skipping Python build."
+fi
+
+echo "📦 Packaging explorer-game artifacts into lib-${SUFFIX}.zip (DLLs + .whl)…"
 (
   cd "$EXPLORER_BIN"
-  zip -r "../../packages/lib-${SUFFIX}.zip" ./*.dll
+  shopt -s nullglob
+  zip -r "../../packages/csharp-lib-${SUFFIX}.zip" ./*.dll ./*.whl
+  shopt -u nullglob
 )
 
 echo "🚀 Publishing lesson-exec in $MODE mode for RIDs: ${RIDS[*]}"

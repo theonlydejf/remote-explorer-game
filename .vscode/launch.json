@@ -2,25 +2,25 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": ".NET Core Launch (console)",
+        "name": "Debug lesson-exec (console)",
         "type": "coreclr",
         "request": "launch",
-        "preLaunchTask": "build local-exec",
-        "program": "${workspaceFolder}/local-exec/bin/Debug/net7.0/local-exec.dll",
+        "preLaunchTask": "build lesson-exec",
+        "program": "${workspaceFolder}/lesson-exec/bin/Debug/net7.0/lesson-exec.dll",
         "args": [],
         "cwd": "${workspaceFolder}",
         "stopAtEntry": false,
         "console": "integratedTerminal"
       },
       {
-        "name": "Debug solution",
+        "name": "Debug example-solution (console)",
         "type": "coreclr",
         "request": "launch",
-        "preLaunchTask": "build solution",
-        "program": "${workspaceFolder}/example-solution/bin/Debug/net7.0/example-solution.dll",
+        "preLaunchTask": "build example-solution",
+        "program": "${workspaceFolder}/examples/csharp/06-example-solution/bin/Debug/net7.0/example-solution.dll",
         "args": [],
         "cwd": "${workspaceFolder}",
-        "stopAtEntry": true,
+        "stopAtEntry": false,
         "console": "integratedTerminal"
       }
     ]
