@@ -14,7 +14,7 @@ The goal is to uncover as much of the map as possible and ideally locate all tra
 - Asynchronous programming and coordinating multiple agents
 - Building clients that interact with a remote server
 
-## How it works (high level)
+## How it works
 - Agents spawn at a fixed start location.
 - Stepping on a trap kills the agent.
 - Staying idle for too long kills the agent (idle kill).
@@ -63,19 +63,9 @@ while session.is_agent_alive:
    - Explore the **examples/** directory for runnable scenarios.
    - Check the API references for deeper details.
 
-## API References
-- **.NET**: `docs/API_DOTNET.md`
-- **Python**: `docs/API_PYTHON.md`
-
 ## For instructors / teachers
 Use this as a hands-on teaching aid for programming, algorithms, and distributed systems.
 - Easy setup: run one shared server; students only install a client library.
 - Two languages: C#/.NET and Python.
 - Concepts covered: BFS/Dijkstra/A*, async programming, client–server interaction, and working with real package ecosystems (NuGet/PyPI).
 - Assessment ideas: map coverage %, number of deaths, time-to-coverage goals, code clarity and testing.
-
-## Contributing
-Contributions are welcome. Please read **CONTRIBUTING.md** before opening a PR.
-
-## License
-Specify your project’s license here (e.g., MIT).

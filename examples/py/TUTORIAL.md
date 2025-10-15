@@ -7,17 +7,13 @@ This short guide explains how to install the library and run the Python examples
 
 ---
 
-## 1) Install (editable mode)
+## 1) Install
 
 From the **project root** (the folder that contains `pyproject.toml`), run:
 
 ```bash
 pip install -e .
 ```
-
-- Installs the package in **editable** mode.
-- Any changes in `py-lib/remote_explorer_game/` are picked up immediately (no reinstall needed).
-- If you change dependencies in `pyproject.toml`, run the command above again.
 
 Optional: verify the version
 
@@ -59,4 +55,4 @@ Open `examples/py/01-simple/example-simple.py` and edit:
 
 - **Module not found**: Ensure you ran `pip install -e .` from the project root and you're launching Python from the same root.
 - **Server not reachable**: Check the server address/port and that the server is running.
-- **Identifier conflicts**: Use a unique two-character identifier per user.
+- **Identifier conflicts**: Use a unique two-character identifier per agent.
