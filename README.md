@@ -60,7 +60,7 @@ while session.is_agent_alive:
 ```
 
 4) **Learn by doing**
-   - Explore the [`examples/`](examples/) directory for runnable scenarios.
+   - Explore the [`examples/`](https://github.com/theonlydejf/remote-explorer-game/tree/main/examples) directory for runnable scenarios.
    - Check the [API references](https://theonlydejf.github.io/remote-explorer-game/api/ExplorerGame.Net.html) for deeper details.
 
 ## For instructors / teachers
