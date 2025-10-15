@@ -4,28 +4,21 @@ on:
   push:
     branches: [ develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+      - uses: actions/checkout@v4
+        with: { submodules: true }
 
-      - name: Show repo tree (pre-build)
-        run: |
-          pwd
-          ls -la
-          echo "---- docs/ ----"
-          ls -la docs || true
-          echo "---- find any docfx.json ----"
-          find . -maxdepth 5 -name "docfx.json" -print
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
@@ -34,29 +27,13 @@ jobs:
           dotnet tool install -g docfx
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      # Make sure we start from a clean output dir
-      - name: Clean previous site
-        run: |
-          rm -rf docs/_site
-          mkdir -p docs/_site
-
-      # Build from your docfx root
-      # (Assumes docs/site-src/docfx.json has "output": "../_site")
+      # Build from docs/site-src; docfx.json should output to ../_site
       - name: Build Docs
         working-directory: docs/site-src
         run: docfx docfx.json
 
-      # Prove the site actually exists and has an index.html
-      - name: Inspect built site
-        run: |
-          echo "---- docs/_site (post-build) ----"
-          ls -la docs/_site || true
-          echo "---- sample tree ----"
-          find docs/_site -maxdepth 2 -type f | head -n 50
-          test -f docs/_site/index.html || (echo "❌ No docs/_site/index.html found. Check your docfx.json output path." && exit 1)
-
-      - name: Upload Preview Artifact
-        uses: actions/upload-artifact@v4
+      # Upload for Pages deploy (and also handy to download if needed)
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: docfx-preview
-          path: docs/_site/**   # <- match actual files, not just the folder
+          path: docs/_site
