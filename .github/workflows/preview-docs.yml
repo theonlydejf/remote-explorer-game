@@ -1,8 +1,6 @@
 name: PR Docs Build Check (Preview)
 
 on:
-  push:
-    branches: [ develop ]
   pull_request:
     branches: [ main, develop ]
 
