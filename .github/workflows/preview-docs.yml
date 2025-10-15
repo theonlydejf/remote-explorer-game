@@ -15,15 +15,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Show repo tree (top level)
-        run: |
-          pwd
-          ls -la
-          echo "---- try to show docs/ ----"
-          ls -la docs || true
-          echo "---- find any docfx.json ----"
-          find . -maxdepth 4 -name "docfx.json" -print
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -38,6 +29,15 @@ jobs:
       - name: Build Docs
         working-directory: docs/site-src
         run: docfx docfx.json
+
+      - name: Show repo tree (top level)
+        run: |
+          pwd
+          ls -la
+          echo "---- try to show docs/ ----"
+          ls -la docs || true
+          echo "---- find any docfx.json ----"
+          find . -maxdepth 4 -name "docfx.json" -print
 
       - name: Upload Preview Artifact
         uses: actions/upload-artifact@v4
