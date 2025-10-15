@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>ExplorerGame</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -15,17 +11,38 @@
     <Authors>David Krčmář</Authors>
     <Description>Full Remote Explorer Game library. Includes client and server.</Description>
     <PackageTags>explorer;game;client</PackageTags>
-    <RepositoryUrl>https://github.com/user/repo</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/theonlydejf/remote-explorer-game</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/theonlydejf/remote-explorer-game.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 
+    <!-- Docs XML -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Make the path explicit so Pack can find it reliably -->
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+
+    <!-- SourceLink + deterministic builds -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Symbols for stepping into source -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Pack the XML docs and README into the nupkg -->
+  <ItemGroup>
+    <None Include="$(DocumentationFile)" Pack="true" PackagePath="lib\$(TargetFramework)\" Visible="false" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>

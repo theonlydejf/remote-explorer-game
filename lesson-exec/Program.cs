@@ -37,8 +37,10 @@ public partial class Program
 
     public static void Main(string[] args)
     {
+        string resourcesPath = Path.Combine(AppContext.BaseDirectory, "resources");
+
         // Test world map
-        Tile?[,] testWorldMap = GameFactory.MapFromImage(Path.Combine(AppContext.BaseDirectory, "resources", "test-map.png"));
+        Tile?[,] testWorldMap = GameFactory.MapFromImage(Path.Combine(resourcesPath, "test-map.png"));
         WorldInfo testWorldInfo = new WorldInfo(
                 $"Test World",
                 ConsoleColor.Cyan,
@@ -47,24 +49,53 @@ public partial class Program
         );
 
         // Load challange world maps
-        string resourcesPath = "resources";
-        string challengesDir = Path.Combine(resourcesPath, "challenges");
-        string[] challengeFiles = Array.Empty<string>();
-        if (Directory.Exists(challengesDir))
-        {
-            challengeFiles = Directory.GetFiles(challengesDir, "challenge-*.png")
-                .Where(f => Regex.IsMatch(Path.GetFileName(f), @"^challenge-\d+\.png$"))
-                .OrderBy(f => int.Parse(Regex.Match(Path.GetFileName(f), @"\d+").Value))
-                .ToArray();
-        }
+        string cwd = Directory.GetCurrentDirectory();
+        string basedir = AppContext.BaseDirectory;
 
+        var candidateDirs = new[]
+        {
+            Path.Combine(cwd, "resources", "challenges"),
+            Path.Combine(basedir, "resources", "challenges"),
+        }
+        .Where(Directory.Exists)
+        .ToArray();
+
+        var re = new Regex(@"^challenge-(\d+)\.png$", RegexOptions.IgnoreCase);
+
+        // Gather all challenge files
+        var allChallengeFiles = candidateDirs
+            .SelectMany(dir => Directory.GetFiles(dir, "*.png")
+            .Where(f => re.IsMatch(Path.GetFileName(f))))
+            .ToList();
+
+        // Deduplicate by filename, prefer files from cwd
+        var challengeFiles = allChallengeFiles
+            .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                // prefer cwd path if any
+                var cwdFile = g.FirstOrDefault(p => p.StartsWith(cwd, StringComparison.OrdinalIgnoreCase));
+                return cwdFile ?? g.First(); // fallback to the first (likely from BaseDir)
+            })
+            .OrderBy(f => int.Parse(re.Match(Path.GetFileName(f)).Groups[1].Value))
+            .ToArray();
+
+        var duplicates = allChallengeFiles
+            .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .ToList();
+
+        // Build worlds
         var worlds = challengeFiles
             .Select((f, i) => new WorldInfo(
                 $"Challenge {i + 1}",
                 ConsoleColor.Green,
                 8081 + i,
                 GameFactory.MapFromImage(f)
-            )).ToList();
+            ))
+            .ToList();
+
+        // Insert test world first
         worlds.Insert(0, testWorldInfo);
 
         Logger logger;
@@ -114,6 +145,34 @@ public partial class Program
                     Environment.Exit(1);
                     return;
                 }
+            }
+        }
+
+        if (candidateDirs.Length == 0)
+        {
+            logger.WriteLine("No challenge directories found in CWD or BaseDir.", ConsoleColor.Black, ConsoleColor.Yellow);
+            logger.WriteLine($"  CWD: {cwd}", ConsoleColor.DarkGray);
+            logger.WriteLine($"  BaseDir: {basedir}", ConsoleColor.DarkGray);
+        }
+        else if (challengeFiles.Length == 0)
+        {
+            logger.WriteLine("No challenge PNGs found (pattern 'challenge-*.png').", ConsoleColor.Black, ConsoleColor.Yellow);
+            foreach (var d in candidateDirs) logger.WriteLine($"  Searched: {d}", ConsoleColor.DarkGray);
+        }
+        if (duplicates.Count > 0)
+        {
+            logger.WriteLine("Duplicate challenge files found:", ConsoleColor.Black, ConsoleColor.Yellow);
+            foreach (var g in duplicates)
+            {
+                logger.WriteLine($"  {g.Key}", ConsoleColor.Yellow);
+                foreach (var path in g)
+                {
+                    logger.WriteLine($"    {path}", ConsoleColor.DarkGray);
+                }
+                var chosen = challengeFiles.FirstOrDefault(f =>
+                    Path.GetFileName(f).Equals(g.Key, StringComparison.OrdinalIgnoreCase));
+                if (chosen != null)
+                    logger.WriteLine($"    -> Using {chosen}", ConsoleColor.Green);
             }
         }
 

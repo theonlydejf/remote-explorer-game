@@ -1,0 +1,39 @@
+name: PR Docs Build Check (Preview)
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: true }
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install DocFX
+        run: |
+          dotnet tool install -g docfx
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      # Build from docs/site-src; docfx.json should output to ../_site
+      - name: Build Docs
+        working-directory: docs/site-src
+        run: docfx docfx.json
+
+      # Upload for Pages deploy (and also handy to download if needed)
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
