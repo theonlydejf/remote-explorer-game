@@ -20,7 +20,7 @@
     "resource": [
       { "src": "../images", "files": [ "**/*" ], "dest": "images" }
     ],
-    "output": "../.site",
+    "output": "../_site",
     "template": [
       "default"
     ],

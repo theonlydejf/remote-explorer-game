@@ -37,11 +37,11 @@ jobs:
       # Make sure we start from a clean output dir
       - name: Clean previous site
         run: |
-          rm -rf docs/.site
-          mkdir -p docs/.site
+          rm -rf docs/_site
+          mkdir -p docs/_site
 
       # Build from your docfx root
-      # (Assumes docs/site-src/docfx.json has "output": "../.site")
+      # (Assumes docs/site-src/docfx.json has "output": "../_site")
       - name: Build Docs
         working-directory: docs/site-src
         run: docfx docfx.json
@@ -50,14 +50,14 @@ jobs:
       # Prove the site actually exists and has an index.html
       - name: Inspect built site
         run: |
-          echo "---- docs/.site (post-build) ----"
-          ls -la docs/.site || true
+          echo "---- docs/_site (post-build) ----"
+          ls -la docs/_site || true
           echo "---- sample tree ----"
-          find docs/.site -maxdepth 2 -type f | head -n 50
-          test -f docs/.site/index.html || (echo "❌ No docs/.site/index.html found. Check your docfx.json output path." && exit 1)
+          find docs/_site -maxdepth 2 -type f | head -n 50
+          test -f docs/_site/index.html || (echo "❌ No docs/_site/index.html found. Check your docfx.json output path." && exit 1)
 
       - name: Upload Preview Artifact
         uses: actions/upload-artifact@v4
         with:
           name: docfx-preview
-          path: docs/.site/**   # <- match actual files, not just the folder
+          path: docs/_site/**   # <- match actual files, not just the folder

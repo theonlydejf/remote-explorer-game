@@ -10,6 +10,7 @@ build/
 ### DocFx ###
 .cache
 /**/.site/
+/**/_site/
 /**/api/
 
 ### Csharp ###
