@@ -45,6 +45,7 @@ jobs:
       - name: Build Docs
         working-directory: docs/site-src
         run: docfx docfx.json
+        include-hidden-files: true
 
       # Prove the site actually exists and has an index.html
       - name: Inspect built site
