@@ -1,186 +1,71 @@
 # Remote Explorer Game
+*An educational client–server exploration game for learning algorithms, libraries, and async programming.*
 
-**Remote Explorer Game** is an educational programming sandbox where students write agents that explore a grid-based world by sending movement commands to a centralized HTTP server. It’s designed to teach programming concepts like algorithms, concurrency, networking, and error handling in a fun, competitive environment.
+## What is it
+Remote Explorer Game is an educational tool for learning programming, algorithms, and client–server interaction.
 
----
+Students connect their own client applications (in C# or Python) to a remote game server and control agents exploring a hidden 2D map. Each agent starts at a fixed position and can move step by step until it encounters a trap and dies. Agents that remain idle for too long are automatically killed. Students can then spawn a new agent to continue exploration.
 
-## 🎯 Who is this for?
+The goal is to uncover as much of the map as possible and ideally locate all traps. Multiple agents can be controlled at the same time, which introduces challenges of coordination and asynchronous programming.
 
-- 🧑‍🎓 **Students** – can control agents via simple API calls
-- 🧑‍🏫 **Teachers** – run server instances to manage worlds
+## What you’ll practice
+- Using published libraries (NuGet for .NET, PyPI for Python)
+- Graph search algorithms (BFS, Dijkstra, A*)
+- Asynchronous programming and coordinating multiple agents
+- Building clients that interact with a remote server
 
----
+## How it works
+- Agents spawn at a fixed start location.
+- Stepping on a trap kills the agent.
+- Staying idle for too long kills the agent (idle kill).
+- Each client has a limit on how many agents may be alive simultaneously.
+- You need a running server (local or remote) to connect to.
 
-## 🚀 Quick Start
+## Worlds
+- **Test World** — visualized map that shows where agents are (great for demos/debugging).
+- **Challenge Worlds** — one or more headless worlds on separate ports for labs/assignments.
+  - To create or configure challenge worlds, see **docs/SERVER_SETUP.md**.
 
-### 🧑‍🏫 For Teachers – Launch the Server
+## Quick start
+1) **Install the client library**
+   - .NET: `dotnet add package ExplorerGame`
+   - Python: `pip install remote-explorer-game`
 
-1. Download a compiled `lesson-exec` zip from the GitHub [release](https://github.com/theonlydejf/remote-explorer-game/releases)
-2. Unzip and run
+2) **Start a server**
+   - Launch the server with **lesson-exec** (compile or download the executable).
+   - For details, ports, and configuration, see **docs/SERVER_SETUP.md**.
 
-This starts:
-- a **test world** on port `8080`
-- multiple **challenge worlds** on ports `8081+`
-- a live console visualizer and logging system
+3) **Connect an agent (tiny examples)**
 
-Press `ESC` or `Q` to stop the server.
-
-> [!NOTE]
-> For the best visual experience, use a dark-themed terminal
-
-## 🧑‍🎓 For Students – Use the Client Library
-
-1. Download the provided `lib-vX.X.zip` from [releases](https://github.com/theonlydejf/remote-explorer-game/releases)
-2. Unpack it and reference it in a new C# project
-3. Create your `Program.cs`:
-
+**C#**
 ```csharp
-var factory = new RemoteGameSessionFactory("http://127.0.0.1:8080/", "Ukazka");
+using ExplorerGame.Net;
+using ExplorerGame.Core;
+
+var factory = new RemoteGameSessionFactory("http://127.0.0.1:8080/", "Your name");
 var session = factory.Create(new SessionIdentifier("[]", ConsoleColor.Magenta));
-session.Move(new Vector(1, 0)); // move right
+
+while (session.IsAgentAlive)
+    session.Move(new Vector(1, 0));
 ```
 
-> [!TIP]
-> Don't forget to explore the examples!
+**Python**
+```python
+from remote_explorer_game import *
+factory = RemoteGameSessionFactory("http://127.0.0.1:8080/", "Example")
+session = factory.create(VisualSessionIdentifier("[]", Color.Magenta))
 
----
-
-## 💡 Code Examples
-
-### 👣 Basic Movement
-
-[`example-simple`](./example-simple/Program.cs) — moves an agent in a square using synchronous calls.
-
-### 🧵 Feedback and Error Handling
-
-[`example-feedback`](./example-feedback/Program.cs) — shows how to safely check movement results and handle potential errors such as null results, timeouts, or invalid server states. Ideal for debugging.
-
-### 🤖 Multiple Agents
-
-[`example-multiple-agents`](./example-multiple-agents/Program.cs) — spawns 5 agents moving independently.
-
-### 🔁 Async Movement
-
-[`example-async`](./example-async/Program.cs) — demonstrates `MoveAsync` and polling for result.
-
-### 🌪 Async + Multiple Agents
-
-[`example-async-multiple-agents`](./example-async-multiple-agents/Program.cs) — best performance with parallel movement logic.
-
-### 🧭 Basic Pathfinding Solution
-
-[`example-solution`](./example-solution/Program.cs) — demonstrates how to implement a simple pathfinding algorithm that explores the map intelligently using visited node tracking and heuristic movement.
-
-### 🧭 Basic Custom Server
-
-[`example-custom-server`](./example-custom-server/Program.cs) - basic example of how to create and work with a server for your students
-
----
-
-## 🧩 How to Create a Challenge
-
-### 1. 🗺️ Create Challenge Maps
-
-- Each map is a **PNG image**, where:
-  - **Bright pixels** represent **deadly (trap)** tiles
-  - **Dark pixels** represent **walkable (safe)** tiles
-
-The image is read pixel by pixel. Each pixel becomes one cell in the grid-based world.
-
-### 2. 📁 Place Images in the Correct Directory
-
-Create and organise the images like this:
-
-```
-resources/challenges/
-├── challenge-1.png
-├── challenge-2.png
-├── ...
+while session.is_agent_alive:
+    session.move((1, 0))
 ```
 
-- File names must match the pattern: `challenge-<number>.png`
-- Images will be sorted and loaded in numeric order
+4) **Learn by doing**
+   - Explore the **examples/** directory for runnable scenarios.
+   - Check the API references for deeper details.
 
-### 3. 🚀 Run the Server
-
-Run the `lesson-exec` binary (or build and run it yourself). It will automatically:
-
-- Launch the **test world server** on port `8080`
-- Launch each **challenge server** starting from port `8081` upward
-
-Example output:
-
-```
-Test server started on port 8080
-Challenge 1 server started on port 8081
-Challenge 2 server started on port 8082
-```
-
-> [!NOTE]
-> Challenge worlds cannot be viewed in the default lesson-exec
-
-### 4. 🎮 Connect to a Specific Challenge
-
-Students must point their agent to the correct server port:
-
-```csharp
-var factory = new RemoteGameSessionFactory("http://127.0.0.1:8082/", "StudentName");
-```
-
-In this example, the agent connects to **challenge 2**, which runs on port `8082`.
-
----
-
-## 🏗️ Build Instructions
-
-You can build and package everything yourself using:
-
-```bash
-./build.sh --self-contained
-```
-
-It generates:
-
-- `packages/lib-Y-M-D.zip` — for students
-- `packages/lesson-exec-RID-Y-M-D.zip` — server executable
-
-Default RIDs: `win-x64`, `linux-x64`, `osx-x64`, etc.
-
-Use `./build.sh --help` for more info
-
-### 🖥️ Build on a Windows machine
-
-You can use [Git Bash](https://git-scm.com/downloads) to run the build script.
-You'll also need the `zip` command for the script to run properly. You can find a good step by step guide in [this](https://stackoverflow.com/a/55749636) answer on Stack Overflow.
-
----
-
-## 🧱 Project Structure
-
-| Folder/File                      | Description                                  |
-|----------------------------------|----------------------------------------------|
-| `explorer-game/`                 | Core engine (sessions, networking, maps)     |
-| `lesson-exec/`                   | Console server for lessons                   |
-| `example-simple/`                | Basic movement example                       |
-| `example-feedback/`              | Debugging + error handling sample            |
-| `example-multiple-agents/`       | Multiple synchronous agents                  |
-| `example-async/`                 | Async client logic                           |
-| `example-async-multiple-agents/` | Fully async, multi-agent demo                |
-| `example-solution`               | Solution using A* pathfinding                |
-| `example-custom-server`          | Simple custom server example                 |
-| `resources/test-map.png`         | Sample map                                   |
-| `build.sh`                       | Build + package script                       |
-
----
-
-## 📦 Dependencies
-
-- [.NET 6 SDK](https://dotnet.microsoft.com/)
-- [Newtonsoft.Json](https://www.newtonsoft.com/json)
-- [ImageSharp](https://github.com/SixLabors/ImageSharp)
-
----
-
-## 🧑‍💻 Contributing
-
-Contributions from teachers, students, and curious developers are welcome! Fork the repo and create a pull request, or open an issue to discuss improvements.
+## For instructors / teachers
+Use this as a hands-on teaching aid for programming, algorithms, and distributed systems.
+- Easy setup: run one shared server; students only install a client library.
+- Two languages: C#/.NET and Python.
+- Concepts covered: BFS/Dijkstra/A*, async programming, client–server interaction, and working with real package ecosystems (NuGet/PyPI).
+- Assessment ideas: map coverage %, number of deaths, time-to-coverage goals, code clarity and testing.
