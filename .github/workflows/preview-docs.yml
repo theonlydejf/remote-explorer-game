@@ -36,7 +36,7 @@ jobs:
 
       # If your docfx.json is in docs/, build from there:
       - name: Build Docs
-        working-directory: docs
+        working-directory: docs/site-src
         run: docfx docfx.json
 
       - name: Upload Preview Artifact
