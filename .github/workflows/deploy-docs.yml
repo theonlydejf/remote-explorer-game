@@ -17,30 +17,34 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: 8.0.x
 
       - name: Install DocFX
         run: |
           dotnet tool install -g docfx
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Restore .NET (if needed for metadata)
+      - name: Restore .NET (for API metadata)
         run: |
           if [ -f "explorer-game/explorer-game.csproj" ]; then
             dotnet restore explorer-game/explorer-game.csproj
           fi
 
       - name: Build docs with DocFX
-        run: |
-          docfx docs/docfx.json
+        working-directory: docs/site-src
+        run: docfx docfx.json
+
+      - name: Verify built site
+        run: test -f docs/_site/index.html
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
