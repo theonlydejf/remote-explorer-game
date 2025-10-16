@@ -247,20 +247,22 @@ public partial class Program
             else
                 vizLoc = VisualizerHAlignement.Centered;
 
-            Console.SetCursorPosition(0, (testWorldMap.GetLength(1) + 1) / 2 - worlds.Count / 2);
-            foreach (var world in worlds)
+            lock (ConsoleSync.sync)
             {
-                Console.Write(' ');
-                Console.ForegroundColor = world.Color;
-                Console.Write(world.Name);
-                Console.ResetColor();
-                Console.Write(new string(' ', maxLen - MAX_EXPECTED_POSTFIX_LEN - world.Name.Length));
-                Console.WriteLine(
-                    $" on {world.Port}: {(world.connectionHandler?.SessionCount)?.ToString() ?? "ERR"} agents"
-                    .PadRight(MAX_EXPECTED_POSTFIX_LEN - 1)
-                );
+                Console.SetCursorPosition(0, (testWorldMap.GetLength(1) + 1) / 2 - worlds.Count / 2);
+                foreach (var world in worlds)
+                {
+                    Console.Write(' ');
+                    Console.ForegroundColor = world.Color;
+                    Console.Write(world.Name);
+                    Console.ResetColor();
+                    Console.Write(new string(' ', maxLen - MAX_EXPECTED_POSTFIX_LEN - world.Name.Length));
+                    Console.WriteLine(
+                        $" on {world.Port}: {(world.connectionHandler?.SessionCount)?.ToString() ?? "ERR"} agents"
+                        .PadRight(MAX_EXPECTED_POSTFIX_LEN - 1)
+                    );
+                }
             }
-
             return vizLoc;
         }
     }
