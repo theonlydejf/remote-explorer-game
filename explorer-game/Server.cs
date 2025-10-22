@@ -61,6 +61,33 @@ public class SessionConnectedEventArgs : EventArgs
 }
 
 /// <summary>
+/// Configuration values for <see cref="ConnectionHandler"/>.
+/// </summary>
+public class ConnectionHandlerOptions
+{
+    /// <summary>
+    /// Maximum number of active sessions per client.
+    /// </summary>
+    public int MaxSessionsPerClient { get; set; } = 20;
+
+    /// <summary>
+    /// Session idle timeout; inactive sessions are killed after this interval.
+    /// </summary>
+    public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Cooldown between actions per session.
+    /// </summary>
+    public TimeSpan SessionActionCooldown { get; set; } = TimeSpan.FromMilliseconds(50);
+
+    /// <summary>
+    /// Whether connecting clients must provide a VSID.
+    /// When null, the handler defaults to requiring VSID only if a visualizer is attached.
+    /// </summary>
+    public bool? RequireVSID { get; set; }
+}
+
+/// <summary>
 /// Handles HTTP requests for connecting clients and moving agents.
 /// Manages per-client session limits, session lifecycle, and visualization updates.
 /// </summary>
@@ -88,12 +115,22 @@ public class ConnectionHandler
     /// <summary>
     /// Idle timeout for killing inactive sessions.
     /// </summary>
-    private readonly TimeSpan idleTimeout = TimeSpan.FromSeconds(5);
+    private readonly TimeSpan idleTimeout;
 
     /// <summary>
     /// Cooldown between actions per session.
     /// </summary>
-    private readonly TimeSpan sessionActionCooldown = TimeSpan.FromMilliseconds(50);
+    private readonly TimeSpan sessionActionCooldown;
+
+    /// <summary>
+    /// Maximum number of sessions allowed per client.
+    /// </summary>
+    private readonly int maxSessionsPerClient;
+
+    /// <summary>
+    /// Whether clients must provide a VSID when connecting.
+    /// </summary>
+    private readonly bool requireVSID;
 
     /// <summary>
     /// Raised after a successful /connect; includes sanitized username and created session data.
@@ -103,10 +140,16 @@ public class ConnectionHandler
     /// <summary>
     /// Creates a handler bound to a specific map; optionally hooks a visualizer for live updates.
     /// </summary>
-    public ConnectionHandler(Tile?[,] map, ConsoleVisualizer? visualizer)
+    public ConnectionHandler(Tile?[,] map, ConsoleVisualizer? visualizer, ConnectionHandlerOptions? options = null)
     {
         this.map = map;
         this.visualizer = visualizer;
+
+        options ??= new ConnectionHandlerOptions();
+        maxSessionsPerClient = options.MaxSessionsPerClient;
+        idleTimeout = options.IdleTimeout;
+        sessionActionCooldown = options.SessionActionCooldown;
+        requireVSID = options.RequireVSID ?? visualizer != null;
     }
 
     /// <summary>
@@ -277,7 +320,7 @@ public class ConnectionHandler
     {
         string clientId = args.Value<string>("clientId")!;
         JObject? vsid = args.Value<JObject>("vsid");
-        if (visualizer != null && vsid == null)
+        if (requireVSID && vsid == null)
             return (new JObject { ["success"] = false, ["message"] = "This server requieres VSID to connect. None present." }, null);
 
         ConsoleColor? color = vsid == null ? null : Enum.Parse<ConsoleColor>(vsid.Value<string>("color")!);
@@ -298,7 +341,7 @@ public class ConnectionHandler
                 clientSessions[clientId] = new();
 
             // Limit sessions per client to avoid abuse.
-            if (clientSessions[clientId].Count >= 20)
+            if (clientSessions[clientId].Count >= maxSessionsPerClient)
                 return (new JObject { ["success"] = false, ["message"] = "Too many sessions" }, null);
 
             var session = new LocalGameSession(map);
