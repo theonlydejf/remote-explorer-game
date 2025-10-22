@@ -2,6 +2,8 @@
   href: ../INTRODUCTION.md
 - name: Getting Started
   href: ../GETTING_STARTED.md
+- name: Tutorials & Examples
+  href: ../TUTORIALS.md
 - name: Server Setup
   href: ../SERVER_SETUP.md
 - name: API Reference
