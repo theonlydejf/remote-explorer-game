@@ -12,12 +12,12 @@
   ```bash
   dotnet add package RemoteExplorerGame
   ```
-  Target your project (class library, console sample, or unit tests). Use a local project reference only when contributing to the repo.
+  Target your project. Use a local project reference when contributing to the repo.
 - **Python (PyPI)**
   ```bash
   pip install remote-explorer-game
   ```
-  Prefer virtual environments for isolation. Switch to `pip install -e .` only when developing against the local sources.
+  Prefer virtual environments for isolation. Switch to `pip install -e .` when developing against the local sources.
 
 ## Launch the Bundled Server (`lesson-exec`)
 1. Download the latest release archive for your platform from the [GitHub releases page](https://github.com/theonlydejf/remote-explorer-game/releases/latest) (`lesson-exec-windows-x64.zip`, `lesson-exec-linux-x64.zip`, etc.).
@@ -54,13 +54,8 @@
   ```
 - Run the scripts, observe the agent marker in the Test World, and confirm logs appear in the console.
 
-## Verify Your Setup
-- Visualizer reports your username, colorized VSID, and movement counts.
-- Idle timeout kills the agent after ~5 seconds — confirm you see a red “inactive” log.
-- Troubleshoot networking issues (firewalls, port conflicts) before progressing to challenges.
-
 ## Next Steps
-- Explore `examples/py/01-simple` to expand on the quickstart loop.
+- Explore [`examples`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples) to expand on the quickstart loop.
 - Work through the feedback, multi-agent, and async examples in **Tutorials & Examples**.
 - Read **Server Setup** to learn about `lesson-exec` configuration and custom host creation.
 - Attempt challenge worlds (8081+) once comfortable with agent orchestration and failure handling.

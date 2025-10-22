@@ -16,4 +16,4 @@ Build, deploy, and explore algorithmic worlds with lightweight clients in C# or 
 
 ## Releases & Source
 - Download precompiled binaries and packages from the [latest GitHub release](https://github.com/theonlydejf/remote-explorer-game/releases/latest).
-- Browse the full source, issue tracker, etc. on the [GitHub repository](https://github.com/theonlydejf/remote-explorer-game).
+- Browse the full source, issue tracker, etc. on the [GitHub repository](https://github.com/theonlydejf/remote-explorer-game/).

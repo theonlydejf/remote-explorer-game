@@ -8,13 +8,13 @@
 ## Quick Reference
 | Example | Concept | Python | C# |
 | --- | --- | --- | --- |
-| Simple Movement | Connecting, basic moves, loops | `examples/py/01-simple/example-simple.py` | `examples/csharp/01-simple/ExampleSimple.cs` |
-| Feedback & Errors | Inspecting `MovementResult`, idle timeout handling | `examples/py/02-feedback/example-feedback.py` | `examples/csharp/02-feedback/ExampleFeedback.cs` |
-| Multiple Agents | Coordinating swarms, auto-respawn | `examples/py/03-multiple-agents/example-multiple-agents.py` | `examples/csharp/03-multiple-agents/ExampleMultipleAgents.cs` |
-| Async Movement | Non-blocking requests, polling handles | `examples/py/04-async/example-async.py` | `examples/csharp/04-async/ExampleAsync.cs` |
-| Async Multi-Agent | Parallel async orchestration | `examples/py/05-async-multiple-agents/example-async-multiple-agents.py` | `examples/csharp/05-async-multiple-agents/ExampleAsyncMultipleAgents.cs` |
-| Advanced Solution | Shared knowledge, heuristics | – | `examples/csharp/06-example-solution/ExampleSolution.cs` |
-| Custom Server | Embedding `ConnectionHandler` | – | `examples/csharp/07-custom-server/ExampleCustomServer.cs` |
+| Simple Movement | Connecting, basic moves, loops | [`examples/py/01-simple/example-simple.py`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/py/01-simple/example-simple.py) | [`examples/csharp/01-simple/ExampleSimple.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/01-simple/ExampleSimple.cs) |
+| Feedback & Errors | Inspecting `MovementResult`, idle timeout handling | [`examples/py/02-feedback/example-feedback.py`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/py/02-feedback/example-feedback.py) | [`examples/csharp/02-feedback/ExampleFeedback.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/02-feedback/ExampleFeedback.cs) |
+| Multiple Agents | Coordinating swarms, auto-respawn | [`examples/py/03-multiple-agents/example-multiple-agents.py`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/py/03-multiple-agents/example-multiple-agents.py) | [`examples/csharp/03-multiple-agents/ExampleMultipleAgents.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/03-multiple-agents/ExampleMultipleAgents.cs) |
+| Async Movement | Non-blocking requests, polling handles | [`examples/py/04-async/example-async.py`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/py/04-async/example-async.py) | [`examples/csharp/04-async/ExampleAsync.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/04-async/ExampleAsync.cs) |
+| Async Multi-Agent | Parallel async orchestration | [`examples/py/05-async-multiple-agents/example-async-multiple-agents.py`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/py/05-async-multiple-agents/example-async-multiple-agents.py) | [`examples/csharp/05-async-multiple-agents/ExampleAsyncMultipleAgents.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/05-async-multiple-agents/ExampleAsyncMultipleAgents.cs) |
+| Advanced Solution | Shared knowledge, heuristics | – | [`examples/csharp/06-example-solution/ExampleSolution.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/06-example-solution/ExampleSolution.cs) |
+| Custom Server | Embedding `ConnectionHandler` | – | [`examples/csharp/07-custom-server/ExampleCustomServer.cs`](https://github.com/theonlydejf/remote-explorer-game/blob/main/examples/csharp/07-custom-server/ExampleCustomServer.cs) |
 
 ## Walkthrough Highlights
 ### Simple Movement

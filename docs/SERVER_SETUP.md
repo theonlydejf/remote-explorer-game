@@ -13,7 +13,7 @@
   3. Launch the bundled executable (`lesson-exec.exe` on Windows, `./lesson-exec` elsewhere).
   4. The Test World (port 8080) uses the console visualizer; challenge worlds (8081+) run headless.
 - Build from source (`dotnet run --project lesson-exec`) only when editing the host or testing new configuration options.
-- CLI options:
+- CLI options *(work in progress on branch [`configurable-lesson-exec`](https://github.com/theonlydejf/remote-explorer-game/tree/configurable-lesson-exec))*:
   - `--resources <path>` — override the default `resources/` root (test map + challenges).
   - `--port <num>` / `--challenge-port-start <num>` — change the Test World port and the base for auto-numbered challenge worlds.
   - `--no-visualizer` — run fully headless, skipping the console map and VSID enforcement.
@@ -44,6 +44,7 @@ Example JSON for `--map-config`:
 ]
 ```
 
+> [!WARNING]
 > Only one world can be visualized at a time. When multiple entries set `visualize: true`, the launcher exits with an error.
 
 ## Customizing Worlds
