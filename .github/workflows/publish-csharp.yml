@@ -1,34 +1,16 @@
-name: Publish distributions on tag
+name: Publish C# package
 
 on:
   push:
     tags:
-      - 'v*'   # e.g. v1.3.0
+      - 'v*'
 
 jobs:
-  publish:
+  publish-csharp:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install build tools
-        run: python -m pip install --upgrade pip build twine
-
-      - name: Build Python distributions
-        run: python -m build --sdist --wheel
-
-      - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          python -m twine upload dist/*
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -37,6 +19,7 @@ jobs:
 
       - name: Pack NuGet package
         run: |
+          set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
           dotnet pack explorer-game/explorer-game.csproj -c Release -o nupkgs /p:PackageVersion="$VERSION"
 
