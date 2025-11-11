@@ -181,8 +181,9 @@ public partial class Program
 
         // Start test world server
         CancellationTokenSource cts = new();
+
         testWorldInfo.connectionHandler = new(testWorldMap, viz);
-        Task testServerTask = testWorldInfo.connectionHandler.StartHttpServer(testWorldInfo.Port, cts.Token);
+        Task testServerTask = StartWorldServer(testWorldInfo)!;
         testWorldInfo.connectionHandler.SessionConnected += new SessionConnectedLogger(
             logger,
             testWorldInfo,
@@ -203,7 +204,7 @@ public partial class Program
                 () => UpdateServerStatus()
             ).Handler;
             worlds[i].connectionHandler!.SessionConnected += (sender, e) => UpdateServerStatus();
-            challengeServerTasks[i] = worlds[i].connectionHandler!.StartHttpServer(worlds[i].Port, cts.Token);
+            challengeServerTasks[i] = StartWorldServer(worlds[i])!;
             logger.Write(worlds[i].Name, worlds[i].Color);
             logger.WriteLine($" server started on port {worlds[i].Port}", ConsoleColor.Yellow);
         }
@@ -221,6 +222,15 @@ public partial class Program
         // Clear up the terminal
         CleanUp();
         cts.Cancel();
+
+        Task? StartWorldServer(WorldInfo world)
+        {
+            return world.connectionHandler?.StartHttpServer(world.Port, cts.Token)
+                .ContinueWith(
+                    t => logger.WriteLine($"Server for {world.Name} stopped due to exception: {t.Exception}", ConsoleColor.White, ConsoleColor.Red),
+                    TaskContinuationOptions.OnlyOnFaulted
+                );
+        }
 
         VisualizerHAlignement UpdateServerStatus()
         {

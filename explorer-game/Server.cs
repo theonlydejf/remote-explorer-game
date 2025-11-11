@@ -123,7 +123,16 @@ public class ConnectionHandler
 
         while (!token.IsCancellationRequested)
         {
-            var context = await listener.GetContextAsync();
+            HttpListenerContext context;
+            try
+            {
+                context = await listener.GetContextAsync();
+            }
+            catch (HttpListenerException)
+            {
+                continue;
+            }
+
             if (context.Request.HttpMethod != "POST")
             {
                 context.Response.StatusCode = 404;

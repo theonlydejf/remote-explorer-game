@@ -3,6 +3,8 @@
 lib-test/
 resources/challenges
 build/
+# Self-roast trophies that are hilarious but not for release
+docs/HALL_OF_FAME.md
 
 # Created by https://www.toptal.com/developers/gitignore/api/csharp,visualstudiocode,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,visualstudiocode,macos
