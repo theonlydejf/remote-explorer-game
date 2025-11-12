@@ -125,10 +125,25 @@ public class LocalGameSession : IGameSession
     /// Creates a new game session on the specified map.
     /// </summary>
     /// <param name="map">The map on which the agent will operate.</param>
-    public LocalGameSession(Tile?[,] map) // TODO: make it possible to specify starting location
+    /// 
+    public LocalGameSession(Tile?[,] map, Vector startLocation) // TODO: make it possible to specify starting location
     {
         this.map = map;
         isAgentAlive = true;
+        agentLocation = startLocation;
+
+        // Out of bounds check
+        if (AgentLocation.X < 0 || AgentLocation.X >= map.GetLength(0) ||
+            AgentLocation.Y < 0 || AgentLocation.Y >= map.GetLength(1))
+        {
+            Kill("Wandered out of the map during initialization");
+        }
+        // Hazard tile check
+        else if (map[AgentLocation.X, AgentLocation.Y].HasValue)
+        {
+            DiscoveredTile = map[AgentLocation.X, AgentLocation.Y];
+            Kill("Stepped on a trap during initialization");
+        }
     }
 
     /// <summary>
@@ -195,3 +210,4 @@ public class LocalGameSession : IGameSession
         AgentDied?.Invoke(this, new AgentDiedEventArgs(reason));
     }
 }
+
